@@ -40,7 +40,7 @@ import java.util.List;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class If
 	extends Conditional
@@ -62,7 +62,7 @@ public class If
 	public Value execute( final Interpreter interpreter )
 	{
 		Value result = super.execute( interpreter );
-		if ( interpreter.getState() != InterpreterState.NORMAL || result == DataTypes.TRUE_VALUE )
+		if ( interpreter.getState() != RuntimeController.State.NORMAL || result == DataTypes.TRUE_VALUE )
 		{
 			return result;
 		}
@@ -73,7 +73,7 @@ public class If
 		{
 			result = elseLoop.execute( interpreter );
 
-			if ( interpreter.getState() != InterpreterState.NORMAL || result == DataTypes.TRUE_VALUE )
+			if ( interpreter.getState() != RuntimeController.State.NORMAL || result == DataTypes.TRUE_VALUE )
 			{
 				return result;
 			}

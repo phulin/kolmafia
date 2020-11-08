@@ -39,8 +39,9 @@ import net.sourceforge.kolmafia.KoLmafia;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 import net.sourceforge.kolmafia.textui.ScriptException;
+import net.sourceforge.kolmafia.textui.RuntimeController.State;
 
 public class Catch
         extends Value
@@ -58,7 +59,7 @@ public class Catch
 	{
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( InterpreterState.EXIT );
+			interpreter.setState( RuntimeController.State.EXIT );
 			return null;
 		}
 
@@ -102,7 +103,7 @@ public class Catch
 		interpreter.traceUnindent();
 
 		// If user aborted or exited, don't catch it
-		if ( interpreter.getState() == InterpreterState.EXIT )
+		if ( interpreter.getState() == RuntimeController.State.EXIT )
 		{
 			return null;
 		}

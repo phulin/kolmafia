@@ -41,9 +41,9 @@ import net.sourceforge.kolmafia.KoLmafia;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
 import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.textui.Profiler;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class FunctionCall
 	extends Value
@@ -88,7 +88,7 @@ public class FunctionCall
 	{
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( InterpreterState.EXIT );
+			interpreter.setState( RuntimeController.State.EXIT );
 			return null;
 		}
 
@@ -118,7 +118,7 @@ public class FunctionCall
 				interpreter.trace( "[" + interpreter.getState() + "] <- " + value.toQuotedString() );
 			}
 
-			if ( interpreter.getState() == InterpreterState.EXIT )
+			if ( interpreter.getState() == RuntimeController.State.EXIT )
 			{
 				interpreter.traceUnindent();
 				return null;
@@ -166,9 +166,9 @@ public class FunctionCall
 			interpreter.trace( "Function " + this.target.getName() + " returned: " + result );
 		}
 
-		if ( interpreter.getState() != InterpreterState.EXIT )
+		if ( interpreter.getState() != RuntimeController.State.EXIT )
 		{
-			interpreter.setState( InterpreterState.NORMAL );
+			interpreter.setState( RuntimeController.State.NORMAL );
 		}
 
 		interpreter.traceUnindent();

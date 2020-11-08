@@ -40,8 +40,8 @@ import java.util.List;
 import net.sourceforge.kolmafia.KoLmafia;
 
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
 import net.sourceforge.kolmafia.textui.Parser;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class FunctionInvocation
 	extends FunctionCall
@@ -75,7 +75,7 @@ public class FunctionInvocation
 	{
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( InterpreterState.EXIT );
+			interpreter.setState( RuntimeController.State.EXIT );
 			return null;
 		}
 

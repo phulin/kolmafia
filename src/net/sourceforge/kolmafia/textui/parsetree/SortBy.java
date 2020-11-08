@@ -43,8 +43,8 @@ import net.sourceforge.kolmafia.KoLmafia;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
 import net.sourceforge.kolmafia.textui.Parser;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class SortBy
 	extends ParseTreeNode
@@ -73,7 +73,7 @@ public class SortBy
 	{
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( InterpreterState.EXIT );
+			interpreter.setState( RuntimeController.State.EXIT );
 			return null;
 		}
 
@@ -86,7 +86,7 @@ public class SortBy
 		AggregateValue map = (AggregateValue) this.aggregate.execute( interpreter );
 		interpreter.captureValue( map );
 
-		if ( interpreter.getState() == InterpreterState.EXIT )
+		if ( interpreter.getState() == RuntimeController.State.EXIT )
 		{
 			interpreter.traceUnindent();
 			return null;
@@ -106,7 +106,7 @@ public class SortBy
 				interpreter.trace( "Element #" + i + ": " + index + " = " + value );
 			}
 			Value sortkey = this.expr.execute( interpreter );
-			if ( interpreter.getState() == InterpreterState.EXIT )
+			if ( interpreter.getState() == RuntimeController.State.EXIT )
 			{
 				interpreter.traceUnindent();
 				return null;

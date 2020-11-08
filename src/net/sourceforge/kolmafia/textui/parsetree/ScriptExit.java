@@ -34,14 +34,14 @@
 package net.sourceforge.kolmafia.textui.parsetree;
 
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class ScriptExit
 	extends ScriptState
 {
 	public ScriptExit()
 	{
-		super( InterpreterState.EXIT );
+		super( RuntimeController.State.EXIT );
 	}
 
 	@Override

@@ -37,7 +37,7 @@ import net.sourceforge.kolmafia.KoLmafia;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public abstract class Conditional
 	extends ParseTreeNode
@@ -66,7 +66,7 @@ public abstract class Conditional
 	{
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( InterpreterState.EXIT );
+			interpreter.setState( RuntimeController.State.EXIT );
 			return null;
 		}
 
@@ -98,7 +98,7 @@ public abstract class Conditional
 
 			interpreter.traceUnindent();
 
-			if ( interpreter.getState() != InterpreterState.NORMAL )
+			if ( interpreter.getState() != RuntimeController.State.NORMAL )
 			{
 				return result;
 			}

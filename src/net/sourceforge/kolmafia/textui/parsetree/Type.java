@@ -62,7 +62,7 @@ import net.sourceforge.kolmafia.request.EquipmentRequest;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-
+import net.sourceforge.kolmafia.textui.RuntimeController;
 import net.sourceforge.kolmafia.utilities.StringUtilities;
 
 public class Type
@@ -395,13 +395,13 @@ public class Type
 		return null;
 	}
 
-	public void validateValue( final Interpreter interpreter, String s1, Value value )
+	public void validateValue( final RuntimeController controller, String s1, Value value )
 	{
 		List<String> names = this.getAmbiguousNames( s1, value, true );
 		if ( names != null && names.size() > 1 )
 		{
 			String s2 = value.toString();
-			Exception ex = interpreter.runtimeException2( "Multiple matches for \"" + s1 + "\"; using \"" + s2 + "\".",
+			Exception ex = controller.runtimeException2( "Multiple matches for \"" + s1 + "\"; using \"" + s2 + "\".",
 								      "Clarify by using one of:" );
 			RequestLogger.printLine( ex.getMessage() );
 			for ( String str : names )

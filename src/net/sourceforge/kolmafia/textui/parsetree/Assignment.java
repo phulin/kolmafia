@@ -39,8 +39,8 @@ import net.sourceforge.kolmafia.KoLmafia;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
 import net.sourceforge.kolmafia.textui.Parser;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class Assignment
 	extends Value
@@ -83,7 +83,7 @@ public class Assignment
 	{
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( InterpreterState.EXIT );
+			interpreter.setState( RuntimeController.State.EXIT );
 			return null;
 		}
 
@@ -111,7 +111,7 @@ public class Assignment
 			interpreter.traceUnindent();
 		}
 
-		if ( interpreter.getState() == InterpreterState.EXIT )
+		if ( interpreter.getState() == RuntimeController.State.EXIT )
 		{
 			return null;
 		}

@@ -41,7 +41,7 @@ import net.sourceforge.kolmafia.StaticEntity;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class Try
 	extends ParseTreeNode
@@ -60,7 +60,7 @@ public class Try
 		// We can't catch script ABORTs
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( InterpreterState.EXIT );
+			interpreter.setState( RuntimeController.State.EXIT );
 			return null;
 		}
 
@@ -88,12 +88,12 @@ public class Try
 		{
 			if ( this.finalClause != null )
 			{
-				InterpreterState oldState = interpreter.getState();
+				RuntimeController.State oldState = interpreter.getState();
 				boolean userAborted = StaticEntity.userAborted;
 				MafiaState continuationState = StaticEntity.getContinuationState();
 
 				KoLmafia.forceContinue();
-				interpreter.setState( InterpreterState.NORMAL );
+				interpreter.setState( RuntimeController.State.NORMAL );
 
 				if ( Interpreter.isTracing() )
 				{

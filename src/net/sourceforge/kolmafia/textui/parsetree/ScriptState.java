@@ -37,14 +37,14 @@ import java.io.PrintStream;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public abstract class ScriptState
 	extends ParseTreeNode
 {
-	private InterpreterState state;
+	private RuntimeController.State state;
 
-	public ScriptState( final InterpreterState state )
+	public ScriptState( final RuntimeController.State state )
 	{
 		this.state = state;
 	}

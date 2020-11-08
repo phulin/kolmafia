@@ -39,8 +39,8 @@ import net.sourceforge.kolmafia.VYKEACompanionData;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
 import net.sourceforge.kolmafia.textui.Parser;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class Operator
 	extends ParseTreeNode
@@ -551,7 +551,7 @@ public class Operator
 		}
 		interpreter.traceUnindent();
 
-		if ( interpreter.getState() == InterpreterState.EXIT )
+		if (interpreter.getState().equals(RuntimeController.State.EXIT))
 		{
 			interpreter.traceUnindent();
 			return null;
@@ -657,7 +657,7 @@ public class Operator
 		}
 		interpreter.traceUnindent();
 
-		if ( interpreter.getState() == InterpreterState.EXIT )
+		if (interpreter.getState().equals(RuntimeController.State.EXIT))
 		{
 			interpreter.traceUnindent();
 			return null;
@@ -697,7 +697,7 @@ public class Operator
 				interpreter.trace( "[" + interpreter.getState() + "] <- " + rightValue.toQuotedString() );
 			}
 			interpreter.traceUnindent();
-			if ( interpreter.getState() == InterpreterState.EXIT )
+			if (interpreter.getState().equals(RuntimeController.State.EXIT))
 			{
 				interpreter.traceUnindent();
 				return null;
@@ -737,7 +737,7 @@ public class Operator
 				interpreter.trace( "[" + interpreter.getState() + "] <- " + rightValue.toQuotedString() );
 			}
 			interpreter.traceUnindent();
-			if ( interpreter.getState() == InterpreterState.EXIT )
+			if (interpreter.getState().equals(RuntimeController.State.EXIT))
 			{
 				interpreter.traceUnindent();
 				return null;
@@ -775,7 +775,7 @@ public class Operator
 				interpreter.trace( "[" + interpreter.getState() + "] <- " + rightValue.toQuotedString() );
 			}
 			interpreter.traceUnindent();
-			if ( interpreter.getState() == InterpreterState.EXIT )
+			if (interpreter.getState().equals(RuntimeController.State.EXIT))
 			{
 				interpreter.traceUnindent();
 				return null;
@@ -806,7 +806,7 @@ public class Operator
 			interpreter.trace( "[" + interpreter.getState() + "] <- " + rightValue.toQuotedString() );
 		}
 		interpreter.traceUnindent();
-		if ( interpreter.getState() == InterpreterState.EXIT )
+		if (interpreter.getState().equals(RuntimeController.State.EXIT))
 		{
 			interpreter.traceUnindent();
 			return null;

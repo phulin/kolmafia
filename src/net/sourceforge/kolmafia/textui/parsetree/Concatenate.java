@@ -39,7 +39,7 @@ import java.util.ArrayList;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class Concatenate
 	extends Expression
@@ -98,7 +98,7 @@ public class Concatenate
 			}
 			interpreter.traceUnindent();
 
-			if ( interpreter.getState() == InterpreterState.EXIT )
+			if ( interpreter.getState() == RuntimeController.State.EXIT )
 			{
 				interpreter.traceUnindent();
 				return null;

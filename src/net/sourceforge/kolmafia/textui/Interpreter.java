@@ -67,25 +67,16 @@ import net.sourceforge.kolmafia.textui.parsetree.VariableReference;
 import net.sourceforge.kolmafia.utilities.CharacterEntities;
 import net.sourceforge.kolmafia.utilities.NullStream;
 
-public class Interpreter
+public class Interpreter implements RuntimeController
 {
 	protected Parser parser;
 	protected Scope scope;
 
 	// Variables used during execution
 
-	public enum InterpreterState
-	{
-		NORMAL,
-		RETURN,
-		BREAK,
-		CONTINUE,
-		EXIT
-	}
-
 	private static final Stack<Interpreter> interpreterStack = new Stack<>();
 
-	private InterpreterState currentState = InterpreterState.NORMAL;
+	private RuntimeController.State currentState = RuntimeController.State.NORMAL;
 	private boolean exiting = false;
 	private int traceIndentation = 0;
 	public Profiler profiler;
@@ -164,11 +155,13 @@ public class Interpreter
 		KoLmafia.forceContinue();
 	}
 
+	@Override
 	public RelayRequest getRelayRequest()
 	{
 		return this.relayRequest;
 	}
 
+	@Override
 	public StringBuffer getServerReplyBuffer()
 	{
 		return this.serverReplyBuffer;
@@ -180,7 +173,7 @@ public class Interpreter
 		this.serverReplyBuffer = null;
 	}
 
-	public void cloneRelayScript( final Interpreter caller )
+	public void cloneRelayScript( final RuntimeController caller )
 	{
 		this.finishRelayScript();
 		if ( caller != null )
@@ -210,16 +203,17 @@ public class Interpreter
 		return this.scope.getFunctions();
 	}
 
-	public InterpreterState getState()
+	@Override
+	public RuntimeController.State getState()
 	{
 		return this.currentState;
 	}
 
-	public void setState( final InterpreterState state )
+	public void setState( final RuntimeController.State state )
 	{
 		this.currentState = state;
 
-		if (state == InterpreterState.EXIT && Preferences.getBoolean( "printStackOnAbort" ) )
+		if (state == RuntimeController.State.EXIT && Preferences.getBoolean( "printStackOnAbort" ) )
 		{
 			this.printStackTrace();
 		}
@@ -360,7 +354,7 @@ public class Interpreter
 
 		Interpreter.interpreterStack.push( this );
 
-		this.currentState = InterpreterState.NORMAL;
+		this.currentState = RuntimeController.State.NORMAL;
 		this.exiting = false;
 		this.resetTracing();
 
@@ -390,7 +384,7 @@ public class Interpreter
 			result = topScope.execute( this );
 		}
 
-		if ( this.currentState == InterpreterState.EXIT )
+		if (this.currentState == RuntimeController.State.EXIT)
 		{
 			return result;
 		}
@@ -600,20 +594,20 @@ public class Interpreter
 			CallFrame current = popFrame();
 			if ( fileName == null )
 			{
-				fileName = current.fileName;
-				lineNumber = current.lineNumber;
+				fileName = current.getFileName();
+				lineNumber = current.getLineNumber();
 				continue;
 			}
 			s.append( KoLConstants.LINE_BREAK);
 			s.append( "\u00A0\u00A0at " );
-			s.append( current.name );
+			s.append( current.getName() );
 			s.append( " (" );
 			s.append( fileName );
 			s.append( ":" );
 			s.append( lineNumber );
 			s.append( ")" );
-			fileName = current.fileName;
-			lineNumber = current.lineNumber;
+			fileName = current.getFileName();
+			lineNumber = current.getLineNumber();
 		}
 
 		frameStack.clear();
@@ -622,7 +616,7 @@ public class Interpreter
 
 	public void printStackTrace()
 	{
-		// We may attempt to print the stack trace multiple times if in STATE_EXIT.
+		// We may attempt to print the stack trace multiple times if in RuntimeController.State.EXIT.
 		if ( this.frameStack.size() > 0 )
 		{
 			String stackTrace = this.getStackTrace();
@@ -687,17 +681,18 @@ public class Interpreter
 		if ( KoLmafia.refusesContinue() || value == null )
 		{
 			// User aborted
-			this.setState( InterpreterState.EXIT );
+			this.setState( RuntimeController.State.EXIT );
 			return;
 		}
 
 		// Even if an error occurred, since we captured the result,
 		// permit further execution.
 
-		this.setState( InterpreterState.NORMAL );
+		this.setState( RuntimeController.State.NORMAL );
 		KoLmafia.forceContinue();
 	}
 
+	@Override
 	public final ScriptException runtimeException( final String message )
 	{
 		return this.runtimeException( message, this.fileName, this.lineNumber );
@@ -708,6 +703,7 @@ public class Interpreter
 		return new ScriptException( message + " " + Parser.getLineAndFile( fileName, lineNumber ) + this.getStackTrace() );
 	}
 
+	@Override
 	public final ScriptException runtimeException2( final String message1, final String message2 )
 	{
 		return runtimeException2( message1, message2, this.fileName, this.lineNumber );
@@ -721,5 +717,15 @@ public class Interpreter
 	public final ScriptException undefinedFunctionException( final String name, final List<Value> params )
 	{
 		return this.runtimeException( Parser.undefinedFunctionMessage( name, params ) );
+	}
+
+	@Override
+	public LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> getBatched() {
+		return batched;
+	}
+
+	@Override
+	public void setBatched(LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched) {
+		this.batched = batched;
 	}
 }

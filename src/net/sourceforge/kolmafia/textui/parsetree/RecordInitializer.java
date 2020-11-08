@@ -37,7 +37,7 @@ import java.util.List;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 
 public class RecordInitializer
 	extends TypeInitializer
@@ -81,7 +81,7 @@ public class RecordInitializer
 				value = DataTypes.VOID_VALUE;
 			}
 
-			if ( interpreter.getState() == InterpreterState.EXIT )
+			if ( interpreter.getState() == RuntimeController.State.EXIT )
 			{
 				interpreter.traceUnindent();
 				return null;

@@ -86,7 +86,7 @@ public class AshMultiLineCommand
 
 		try
 		{
-			interpreter.cloneRelayScript( this.interpreter );
+			interpreter.cloneRelayScript( this.callerController );
 			interpreter.execute( "main", null );
 		}
 		finally

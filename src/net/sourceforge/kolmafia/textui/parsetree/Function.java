@@ -433,8 +433,11 @@ public abstract class Function
 
 			paramCount++;
 
-			// Bind parameter to new value
-			paramVarRef.setValue( interpreter, value );
+			if (interpreter != null)
+			{
+				// Bind parameter to new value
+				paramVarRef.setValue( interpreter, value );
+			}
 
 			// Add to new values list
 			newValues.add( value );

@@ -44,8 +44,8 @@ import net.sourceforge.kolmafia.KoLmafia;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.Interpreter.InterpreterState;
 import net.sourceforge.kolmafia.textui.Parser;
+import net.sourceforge.kolmafia.textui.RuntimeController;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
 
 import net.sourceforge.kolmafia.textui.parsetree.Function.MatchType;
@@ -568,7 +568,7 @@ public abstract class BasicScope
 				// Abort processing now if command failed
 				if ( !KoLmafia.permitsContinue() )
 				{
-					interpreter.setState( InterpreterState.EXIT );
+					interpreter.setState( RuntimeController.State.EXIT );
 				}
 
 				if ( result == null )
@@ -581,7 +581,7 @@ public abstract class BasicScope
 					interpreter.trace( "[" + interpreter.getState() + "] <- " + result.toQuotedString() );
 				}
 
-				if ( interpreter.getState() != InterpreterState.NORMAL )
+				if ( interpreter.getState() != RuntimeController.State.NORMAL )
 				{
 					break;
 				}

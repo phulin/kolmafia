@@ -605,4 +605,81 @@ public class Value
 			return this.toString();
 		}
 	}
+
+	public Object toJava()
+	{
+		if ( this.getType().equals( DataTypes.VOID_TYPE ) )
+		{
+			return null;
+		}
+		else if ( this.getType().equals( DataTypes.BOOLEAN_TYPE ) )
+		{
+			return this.contentLong != 0;
+		}
+		else if ( this.getType().equals( DataTypes.INT_TYPE ) )
+		{
+			return this.contentLong;
+		}
+		else if ( this.getType().equals( DataTypes.FLOAT_TYPE ) )
+		{
+			return this.floatValue();
+		}
+		else if ( this.getType().equals( DataTypes.STRING_TYPE ) || this.getType().equals( DataTypes.STRICT_STRING_TYPE ) )
+		{
+			return this.contentString;
+		}
+		else if ( this.getType().equals( DataTypes.BUFFER_TYPE ) )
+		{
+			return this.content;
+		}
+		else if ( this.getType().equals( DataTypes.MATCHER_TYPE ) )
+		{
+			return this.content;
+		}
+		else if ( this.getType().equals( DataTypes.AGGREGATE_TYPE ) )
+		{
+			return this.content;
+		}
+		else
+		{
+			return this.asProxy();
+		}
+	}
+
+	public static Object asJava(Value value)
+	{
+		if ( value == null ) return null;
+		else return value.toJava();
+	}
+
+	public static Value fromJava(Object object)
+	{
+		if ( object == null ) return null;
+		else if ( object instanceof Boolean )
+		{
+			return DataTypes.makeBooleanValue( (Boolean) object );
+		}
+		else if ( object instanceof Float || object instanceof Double )
+		{
+			return DataTypes.makeFloatValue( ( (Number) object ).floatValue() );
+		}
+		else if ( object instanceof Byte || object instanceof Short || object instanceof Integer || object instanceof Long )
+		{
+			return DataTypes.makeIntValue( ( (Number) object ).intValue() );
+		}
+		else if ( object instanceof String )
+		{
+			return DataTypes.makeStringValue( (String) object );
+		}
+		else if ( object instanceof ProxyRecordValue )
+		{
+			// Unimplemented.
+			return null;
+		}
+		else
+		{
+			return null;
+		}
+
+	}
 }

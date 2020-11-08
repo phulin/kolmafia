@@ -71,7 +71,7 @@ public class AshSingleLineCommand
 
 		try
 		{
-			interpreter.cloneRelayScript( this.interpreter );
+			interpreter.cloneRelayScript( this.callerController );
 			rv = interpreter.execute( "main", null );
 		}
 		finally
