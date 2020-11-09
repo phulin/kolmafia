@@ -273,6 +273,8 @@ public class CallScriptCommand
 						MafiaState.ERROR, "Cannot use command " + command + "with JavaScript scripts." );
 				}
 				JavascriptRuntime runtime = new JavascriptRuntime( scriptFile );
+				// FIXME: Add arguments.
+				runtime.execute();
 			}
 			else
 			{

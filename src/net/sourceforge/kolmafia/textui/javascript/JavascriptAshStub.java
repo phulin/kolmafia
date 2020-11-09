@@ -1,11 +1,13 @@
 package net.sourceforge.kolmafia.textui.javascript;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
+import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.textui.RuntimeController;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
@@ -35,9 +37,9 @@ public class JavascriptAshStub extends BaseFunction
 	public Object call( Context cx, Scriptable scope, Scriptable thisObj, Object[] args )
 	{
 		// Coerce arguments from Java to ASH values 
-		ArrayList<Value> ashArgs = new ArrayList<>();
+		List<Value> ashArgs = new ArrayList<>();
 		for ( final Object o : args ) {
-			ashArgs.add(Value.fromJava(o));
+			ashArgs.add( Value.fromJava( o ) );
 		}
 
 		// Find library function matching arguments.
@@ -70,11 +72,14 @@ public class JavascriptAshStub extends BaseFunction
 		}
 		else
 		{
-			throw controller.runtimeException(Parser.undefinedFunctionMessage(ashFunctionName, ashArgs));
+			throw controller.runtimeException( Parser.undefinedFunctionMessage( ashFunctionName, ashArgs ) );
 		}
 
-		Value returnValue = ashFunction.executeWithoutInterpreter( controller, ashArgs.toArray() );
+		List<Object> ashArgsWithInterpreter = new ArrayList<Object>();
+		ashArgsWithInterpreter.add(controller);
+		ashArgsWithInterpreter.addAll(ashArgs);
+		Value returnValue = ashFunction.executeWithoutInterpreter( controller, ashArgsWithInterpreter.toArray() );
 
-		return Value.asJava(returnValue);
+		return Value.asJava( returnValue );
 	}
 }

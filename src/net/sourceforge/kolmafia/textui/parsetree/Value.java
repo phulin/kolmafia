@@ -671,6 +671,10 @@ public class Value
 		{
 			return DataTypes.makeStringValue( (String) object );
 		}
+		else if ( object instanceof StringBuffer )
+		{
+			return DataTypes.makeStringValue( object.toString() );
+		}
 		else if ( object instanceof ProxyRecordValue )
 		{
 			// Unimplemented.
