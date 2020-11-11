@@ -54,6 +54,7 @@ import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.utilities.StringUtilities;
 
 import org.json.JSONException;
+import org.mozilla.javascript.ConsString;
 
 public class Value
 	extends ParseTreeNode
@@ -671,14 +672,13 @@ public class Value
 		{
 			return DataTypes.makeStringValue( (String) object );
 		}
-		else if ( object instanceof StringBuffer )
+		else if ( object instanceof StringBuffer || object instanceof ConsString )
 		{
 			return DataTypes.makeStringValue( object.toString() );
 		}
 		else if ( object instanceof ProxyRecordValue )
 		{
-			// Unimplemented.
-			return null;
+			return (ProxyRecordValue) object;
 		}
 		else
 		{

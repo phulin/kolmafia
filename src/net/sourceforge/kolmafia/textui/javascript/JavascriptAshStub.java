@@ -40,6 +40,10 @@ public class JavascriptAshStub extends BaseFunction
 		List<Value> ashArgs = new ArrayList<>();
 		for ( final Object o : args ) {
 			ashArgs.add( Value.fromJava( o ) );
+			if ( ashArgs.get( ashArgs.size() - 1 ) == null )
+			{
+				throw controller.runtimeException("Argument value is null.");
+			}
 		}
 
 		// Find library function matching arguments.
