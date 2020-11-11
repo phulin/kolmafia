@@ -47,7 +47,9 @@ import net.sourceforge.kolmafia.textui.RuntimeLibrary;
 import net.sourceforge.kolmafia.textui.ScriptException;
 
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.EcmaError;
 import org.mozilla.javascript.EvaluatorException;
+import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -72,7 +74,33 @@ public class JavascriptRuntime implements ScriptRuntime
 	private RelayRequest relayRequest = null;
 	private StringBuffer serverReplyBuffer = null;
 
-	private LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched;
+    private LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched;
+    
+    public static String toCamelCase( String name )
+    {
+        if ( name == null )
+        {
+            return null;
+        }
+
+        boolean first = true;
+        StringBuilder result = new StringBuilder();
+        for ( String word : name.split( "_" ) )
+        {
+            if ( first )
+            {
+                result.append( word.charAt( 0 ) );
+                first = false;
+            }
+            else
+            {
+                result.append( Character.toUpperCase( word.charAt( 0 ) ) );
+            }
+            result.append( word.substring( 1 ) );
+        }
+
+        return result.toString();
+    }
 	
 	public JavascriptRuntime( File scriptFile )
 	{
@@ -82,6 +110,7 @@ public class JavascriptRuntime implements ScriptRuntime
     public void execute()
     {
         Context cx = Context.enter();
+        runningRuntimes.add( this );
 
         try
         {
@@ -97,9 +126,9 @@ public class JavascriptRuntime implements ScriptRuntime
 			}
 			for ( String libraryFunctionName : functionNameSet )
 			{
-				ScriptableObject.putProperty( stdLib, libraryFunctionName, new JavascriptAshStub( this, libraryFunctionName ) );
+				ScriptableObject.putProperty( stdLib, toCamelCase( libraryFunctionName ), new JavascriptAshStub( this, libraryFunctionName ) );
 			}
-            ScriptableObject.putProperty( scope, "ash", stdLib );
+            ScriptableObject.putProperty( scope, "Lib", stdLib );
 
             try
             {
@@ -114,7 +143,15 @@ public class JavascriptRuntime implements ScriptRuntime
             }
             catch ( EvaluatorException e )
             {
-                KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript evaluator exception.\n" + e.getScriptStackTrace() );
+                KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript evaluator exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
+            }
+            catch ( EcmaError e )
+            {
+                KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript error: " + e.getErrorMessage() + "\n" + e.getScriptStackTrace() ); 
+            }
+            catch ( JavaScriptException e )
+            {
+                KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
             }
             finally
             {
@@ -133,6 +170,7 @@ public class JavascriptRuntime implements ScriptRuntime
         }
         finally
         {
+            runningRuntimes.remove( this );
             Context.exit();
         }
     }
@@ -140,17 +178,13 @@ public class JavascriptRuntime implements ScriptRuntime
     @Override
 	public ScriptException runtimeException( final String message )
     {
-        return new ScriptException(
-			Context.reportRuntimeError(message).getMessage()
-		);
+        return new ScriptException( Context.reportRuntimeError(message).getMessage() );
     }
 
     @Override
     public ScriptException runtimeException2(final String message1, final String message2)
     {
-        return new ScriptException(
-			Context.reportRuntimeError(message1 + " " + message2).getMessage()
-		);
+        return new ScriptException( Context.reportRuntimeError(message1 + " " + message2).getMessage() );
     }
 
     @Override

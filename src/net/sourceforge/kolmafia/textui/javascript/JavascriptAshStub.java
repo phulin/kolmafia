@@ -30,7 +30,7 @@ public class JavascriptAshStub extends BaseFunction
 	@Override
 	public String getFunctionName()
 	{
-		return this.ashFunctionName;
+		return JavascriptRuntime.toCamelCase( this.ashFunctionName );
 	}
 	
 	@Override
