@@ -38,10 +38,10 @@ import java.io.PrintStream;
 import net.sourceforge.kolmafia.KoLmafia;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
-import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.RuntimeController;
+import net.sourceforge.kolmafia.textui.AshRuntime;
+import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.ScriptException;
-import net.sourceforge.kolmafia.textui.RuntimeController.State;
+import net.sourceforge.kolmafia.textui.ScriptRuntime.State;
 
 public class Catch
         extends Value
@@ -55,16 +55,16 @@ public class Catch
 	}
 
 	@Override
-	public Value execute( final Interpreter interpreter )
+	public Value execute( final AshRuntime interpreter )
 	{
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( RuntimeController.State.EXIT );
+			interpreter.setState( ScriptRuntime.State.EXIT );
 			return null;
 		}
 
 		interpreter.traceIndent();
-		if ( Interpreter.isTracing() )
+		if ( AshRuntime.isTracing() )
 		{
 			interpreter.trace( "Evaluating catch body" );
 		}
@@ -95,7 +95,7 @@ public class Catch
 			interpreter.captureValue( scopeValue );
 		}
 
-		if ( Interpreter.isTracing() )
+		if ( AshRuntime.isTracing() )
 		{
 			interpreter.trace( "Returning '" + errorMessage + "'" );
 		}
@@ -103,7 +103,7 @@ public class Catch
 		interpreter.traceUnindent();
 
 		// If user aborted or exited, don't catch it
-		if ( interpreter.getState() == RuntimeController.State.EXIT )
+		if ( interpreter.getState() == ScriptRuntime.State.EXIT )
 		{
 			return null;
 		}
@@ -132,7 +132,7 @@ public class Catch
 	@Override
 	public void print( final PrintStream stream, final int indent )
 	{
-		Interpreter.indentLine( stream, indent );
+		AshRuntime.indentLine( stream, indent );
 		stream.println( "<CATCH>" );
 		this.node.print( stream, indent + 1 );
 	}

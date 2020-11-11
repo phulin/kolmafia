@@ -226,7 +226,7 @@ import net.sourceforge.kolmafia.session.UnusualConstructManager;
 import net.sourceforge.kolmafia.session.VotingBoothManager;
 import net.sourceforge.kolmafia.svn.SVNManager;
 import net.sourceforge.kolmafia.swingui.widget.InterruptableDialog;
-import net.sourceforge.kolmafia.textui.Interpreter.CallFrame;
+import net.sourceforge.kolmafia.textui.AshRuntime.CallFrame;
 import net.sourceforge.kolmafia.textui.command.ConditionalStatement;
 import net.sourceforge.kolmafia.textui.command.SetPreferencesCommand;
 
@@ -2449,16 +2449,16 @@ public abstract class RuntimeLibrary
 
 	private static Value continueValue()
 	{
-		boolean continueValue = Interpreter.getContinueValue();
+		boolean continueValue = AshRuntime.getContinueValue();
 
-		Interpreter.forgetPendingState();
+		AshRuntime.forgetPendingState();
 
 		return DataTypes.makeBooleanValue( continueValue );
 	}
 
 	// Support for batching of server requests
 
-	private static void batchCommand( RuntimeController controller, String cmd, String prefix, String params )
+	private static void batchCommand( ScriptRuntime controller, String cmd, String prefix, String params )
 	{
 		LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched = controller.getBatched();
 		if ( batched == null )
@@ -2489,14 +2489,14 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value get_stack_trace( RuntimeController controller )
+	public static Value get_stack_trace( ScriptRuntime controller )
 	{
-		if ( !( controller instanceof Interpreter ) )
+		if ( !( controller instanceof AshRuntime ) )
 		{
 			throw controller.runtimeException("Stack trace only supported when called from ASH.");
 		}
 
-		Interpreter interpreter = (Interpreter) controller;
+		AshRuntime interpreter = (AshRuntime) controller;
 		List<CallFrame> callStack = interpreter.getCallFrames();
 
 		int frameCount = callStack.size();
@@ -2518,17 +2518,17 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_version( RuntimeController controller )
+	public static Value get_version( ScriptRuntime controller )
 	{
 		return new Value( KoLConstants.VERSION_NAME );
 	}
 
-	public static Value get_revision( RuntimeController controller )
+	public static Value get_revision( ScriptRuntime controller )
 	{
 		return new Value( StaticEntity.getRevision() );
 	}
 
-	public static Value get_path( RuntimeController controller )
+	public static Value get_path( ScriptRuntime controller )
 	{
 		RelayRequest relayRequest = controller.getRelayRequest();
 		if ( relayRequest == null )
@@ -2538,7 +2538,7 @@ public abstract class RuntimeLibrary
 		return new Value( relayRequest.getBasePath() );
 	}
 
-	public static Value get_path_full( RuntimeController controller )
+	public static Value get_path_full( ScriptRuntime controller )
 	{
 		RelayRequest relayRequest = controller.getRelayRequest();
 		if ( relayRequest == null )
@@ -2548,7 +2548,7 @@ public abstract class RuntimeLibrary
 		return new Value( relayRequest.getPath() );
 	}
 
-	public static Value get_path_variables( RuntimeController controller )
+	public static Value get_path_variables( ScriptRuntime controller )
 	{
 		RelayRequest relayRequest = controller.getRelayRequest();
 		if ( relayRequest == null )
@@ -2560,7 +2560,7 @@ public abstract class RuntimeLibrary
 		return quest == -1 ? DataTypes.STRING_INIT : new Value( value.substring( quest ) );
 	}
 
-	public static Value batch_open( RuntimeController controller )
+	public static Value batch_open( ScriptRuntime controller )
 	{
 		if ( controller.getBatched() == null )
 		{
@@ -2569,7 +2569,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value batch_close( RuntimeController controller )
+	public static Value batch_close( ScriptRuntime controller )
 	{
 		LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched = controller.getBatched();
 		if ( batched != null )
@@ -2597,24 +2597,24 @@ public abstract class RuntimeLibrary
 	// Basic utility functions which print information
 	// or allow for easy testing.
 
-	public static Value enable( RuntimeController controller, final Value name )
+	public static Value enable( ScriptRuntime controller, final Value name )
 	{
 		StaticEntity.enable( name.toString().toLowerCase() );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value disable( RuntimeController controller, final Value name )
+	public static Value disable( ScriptRuntime controller, final Value name )
 	{
 		StaticEntity.disable( name.toString().toLowerCase() );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value user_confirm( RuntimeController controller, final Value message )
+	public static Value user_confirm( ScriptRuntime controller, final Value message )
 	{
 		return DataTypes.makeBooleanValue( InputFieldUtilities.confirm( message.toString() ) );
 	}
 
-	public static Value user_confirm( RuntimeController controller, final Value message, final Value timeOut,
+	public static Value user_confirm( ScriptRuntime controller, final Value message, final Value timeOut,
 		final Value defaultBoolean )
 	{
 		return InterruptableDialog.confirm( message, timeOut, defaultBoolean );
@@ -2645,13 +2645,13 @@ public abstract class RuntimeLibrary
 		return "<font color=\"" + colorString + "\">" + string + "</font>";
 	}
 
-	public static Value logprint( RuntimeController controller, final Value string )
+	public static Value logprint( ScriptRuntime controller, final Value string )
 	{
 		String parameters = RuntimeLibrary.cleanString( string );
 		RequestLogger.getSessionStream().println( "> " + parameters );
 		return DataTypes.VOID_VALUE;
 	}
-	public static Value debugprint( RuntimeController controller, final Value string )
+	public static Value debugprint( ScriptRuntime controller, final Value string )
 	{
 		if ( RequestLogger.isDebugging() )
 		{
@@ -2666,7 +2666,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value traceprint( RuntimeController controller, final Value string )
+	public static Value traceprint( ScriptRuntime controller, final Value string )
 	{
 		if ( RequestLogger.isTracing() )
 		{
@@ -2677,19 +2677,19 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value print( RuntimeController controller )
+	public static Value print( ScriptRuntime controller )
 	{
 		RequestLogger.printLine();
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value print( RuntimeController controller, final Value string )
+	public static Value print( ScriptRuntime controller, final Value string )
 	{
 		RuntimeLibrary.print( controller, string, new Value( "" ) );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value print( RuntimeController controller, final Value string, final Value color )
+	public static Value print( ScriptRuntime controller, final Value string, final Value color )
 	{
 		String parameters = RuntimeLibrary.cleanString( string );
 
@@ -2703,19 +2703,19 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value print_html( RuntimeController controller, final Value string )
+	public static Value print_html( ScriptRuntime controller, final Value string )
 	{
 		RequestLogger.printLine( string.toString() );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value dump( RuntimeController controller, final Value arg )
+	public static Value dump( ScriptRuntime controller, final Value arg )
 	{
 		RuntimeLibrary.dump( controller, arg, new Value( "" ) );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value dump( RuntimeController controller, final Value arg, final Value color )
+	public static Value dump( ScriptRuntime controller, final Value arg, final Value color )
 	{
 		RuntimeLibrary.print( controller, new Value( arg.toString() ), color );
 
@@ -2743,7 +2743,7 @@ public abstract class RuntimeLibrary
 
 			if ( addToSessionStream )
 			{
-				RuntimeLibrary.print( new Interpreter(), new Value ( line ), color );
+				RuntimeLibrary.print( new AshRuntime(), new Value ( line ), color );
 			}
 			else
 			{
@@ -2756,32 +2756,32 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value abort( RuntimeController controller )
+	public static Value abort( ScriptRuntime controller )
 	{
 		RuntimeLibrary.abort( controller, "Script aborted." );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value abort( RuntimeController controller, final Value string )
+	public static Value abort( ScriptRuntime controller, final Value string )
 	{
 		RuntimeLibrary.abort( controller, string.toString() );
 		return DataTypes.VOID_VALUE;
 	}
 
-	private static Value abort( RuntimeController controller, final String string )
+	private static Value abort( ScriptRuntime controller, final String string )
 	{
 		KoLmafia.updateDisplay( MafiaState.ABORT, string );
-		controller.setState( RuntimeController.State.EXIT );
+		controller.setState( ScriptRuntime.State.EXIT );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value cli_execute( RuntimeController controller, final Value string )
+	public static Value cli_execute( ScriptRuntime controller, final Value string )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeLine( string.toString() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value cli_execute_output( RuntimeController controller, final Value string )
+	public static Value cli_execute_output( ScriptRuntime controller, final Value string )
 	{
 		ByteArrayOutputStream ostream = new ByteArrayOutputStream();
 		PrintStream out = new PrintStream( ostream );
@@ -2793,7 +2793,7 @@ public abstract class RuntimeLibrary
 		return new Value( ostream.toString() );
 	}
 
-	public static Value load_html( RuntimeController controller, final Value string )
+	public static Value load_html( ScriptRuntime controller, final Value string )
 	{
 		StringBuffer buffer = new StringBuffer();
 		Value returnValue = new Value( DataTypes.BUFFER_TYPE, "", buffer );
@@ -2809,7 +2809,7 @@ public abstract class RuntimeLibrary
 		return returnValue;
 	}
 
-	public static Value write( RuntimeController controller, final Value string )
+	public static Value write( ScriptRuntime controller, final Value string )
 	{
 		RelayRequest relayRequest = controller.getRelayRequest();
 		if ( relayRequest == null )
@@ -2822,7 +2822,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value writeln( RuntimeController controller, final Value string )
+	public static Value writeln( ScriptRuntime controller, final Value string )
 	{
 		RelayRequest relayRequest = controller.getRelayRequest();
 		if ( relayRequest == null )
@@ -2836,7 +2836,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value form_field( RuntimeController controller, final Value key )
+	public static Value form_field( ScriptRuntime controller, final Value key )
 	{
 		RelayRequest relayRequest = controller.getRelayRequest();
 		if ( relayRequest == null )
@@ -2848,7 +2848,7 @@ public abstract class RuntimeLibrary
 		return value == null ? DataTypes.STRING_INIT : new Value( value );
 	}
 
-	public static Value form_fields( RuntimeController controller )
+	public static Value form_fields( ScriptRuntime controller )
 	{
 		AggregateType type = new AggregateType( DataTypes.STRING_TYPE, DataTypes.STRING_TYPE );
 		MapValue value = new MapValue( type );
@@ -2878,7 +2878,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value xpath( RuntimeController controller, final Value html, final Value xpath )
+	public static Value xpath( ScriptRuntime controller, final Value html, final Value xpath )
 	{
 		HtmlCleaner cleaner = HTMLParserUtils.configureDefaultParser();
 
@@ -2918,7 +2918,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value visit_url( RuntimeController controller )
+	public static Value visit_url( ScriptRuntime controller )
 	{
 		RelayRequest relayRequest = controller.getRelayRequest();
 		if ( relayRequest == null )
@@ -2948,27 +2948,27 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.BUFFER_TYPE, "", buffer );
 	}
 
-	public static Value visit_url( RuntimeController controller, final Value string )
+	public static Value visit_url( ScriptRuntime controller, final Value string )
 	{
 		return RuntimeLibrary.visit_url( controller, string.toString(), true, false );
 	}
 
-	public static Value visit_url( RuntimeController controller, final Value string, final Value usePostMethod )
+	public static Value visit_url( ScriptRuntime controller, final Value string, final Value usePostMethod )
 	{
 		return RuntimeLibrary.visit_url( controller, string.toString(), usePostMethod.intValue() == 1, false );
 	}
 
-	public static Value visit_url( RuntimeController controller, final Value string, final Value usePostMethod, final Value encoded )
+	public static Value visit_url( ScriptRuntime controller, final Value string, final Value usePostMethod, final Value encoded )
 	{
 		return RuntimeLibrary.visit_url( controller, string.toString(), usePostMethod.intValue() == 1, encoded.intValue() == 1 );
 	}
 
-	private static Value visit_url( RuntimeController controller, final String location )
+	private static Value visit_url( ScriptRuntime controller, final String location )
 	{
 		return RuntimeLibrary.visit_url( controller, location, true, false );
 	}
 
-	private static Value visit_url( RuntimeController controller, final String location, final boolean usePostMethod, final boolean encoded )
+	private static Value visit_url( ScriptRuntime controller, final String location, final boolean usePostMethod, final boolean encoded )
 	{
 		StringBuffer buffer = new StringBuffer();
 		Value returnValue = new Value( DataTypes.BUFFER_TYPE, "", buffer );
@@ -3018,7 +3018,7 @@ public abstract class RuntimeLibrary
 		return returnValue;
 	}
 
-	public static Value make_url( RuntimeController controller, final Value arg1, final Value arg2, final Value arg3 )
+	public static Value make_url( ScriptRuntime controller, final Value arg1, final Value arg2, final Value arg3 )
 	{
 		String location = arg1.toString();
 		boolean usePostMethod = arg2.intValue() == 1;
@@ -3028,13 +3028,13 @@ public abstract class RuntimeLibrary
 		return new Value( request.getURLString() );
 	}
 
-	public static Value wait( RuntimeController controller, final Value delay )
+	public static Value wait( ScriptRuntime controller, final Value delay )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "wait", delay.toString() );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value waitq( RuntimeController controller, final Value delay )
+	public static Value waitq( ScriptRuntime controller, final Value delay )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "waitq", delay.toString() );
 		return DataTypes.VOID_VALUE;
@@ -3043,14 +3043,14 @@ public abstract class RuntimeLibrary
 	// Type conversion functions which allow conversion
 	// of one data format to another.
 
-	public static Value to_json( RuntimeController controller, Value val )
+	public static Value to_json( ScriptRuntime controller, Value val )
 		throws JSONException
 	{
 		Object obj = val.asProxy().toJSON();
 		return new Value( obj instanceof String ? JSONObject.quote( (String) obj ) : obj.toString() );
 	}
 
-	public static Value to_string( RuntimeController controller, Value val )
+	public static Value to_string( ScriptRuntime controller, Value val )
 	{
 		// This function previously just returned val, except in the
 		// case of buffers in which case it's necessary to capture the
@@ -3062,7 +3062,7 @@ public abstract class RuntimeLibrary
 		return val.toStringValue();
 	}
 	
-	public static Value to_string( RuntimeController controller, Value val, Value fmt )
+	public static Value to_string( ScriptRuntime controller, Value val, Value fmt )
 	{
 		try
 		{
@@ -3083,12 +3083,12 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value to_boolean( RuntimeController controller, final Value value )
+	public static Value to_boolean( ScriptRuntime controller, final Value value )
 	{
 		return DataTypes.makeBooleanValue( ( value.intValue() != 0 || value.toString().equalsIgnoreCase( "true" ) ) );
 	}
 
-	public static Value to_int( RuntimeController controller, final Value value )
+	public static Value to_int( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_STRING ) )
 		{
@@ -3122,7 +3122,7 @@ public abstract class RuntimeLibrary
 		return new Value( value.intValue() );
 	}
 
-	public static Value to_float( RuntimeController controller, final Value value )
+	public static Value to_float( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_STRING ) )
 		{
@@ -3142,7 +3142,7 @@ public abstract class RuntimeLibrary
 		return value.toFloatValue();
 	}
 
-	public static Value to_item( RuntimeController controller, final Value value )
+	public static Value to_item( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_INT ) )
 		{
@@ -3156,29 +3156,29 @@ public abstract class RuntimeLibrary
 		return item;
 	}
 
-	public static Value to_item( RuntimeController controller, final Value name, final Value count )
+	public static Value to_item( ScriptRuntime controller, final Value name, final Value count )
 	{
 		return DataTypes.makeItemValue( ItemDatabase.getItemId( name.toString(), (int) count.intValue() ), true );
 	}
 
-	public static Value desc_to_item( RuntimeController controller, final Value value )
+	public static Value desc_to_item( ScriptRuntime controller, final Value value )
 	{
 		return DataTypes.makeItemValue( ItemDatabase.getItemIdFromDescription( value.toString() ), true );
 	}
 
-	public static Value path_name_to_id( RuntimeController controller, final Value value )
+	public static Value path_name_to_id( ScriptRuntime controller, final Value value )
 	{
 		Path path = AscensionPath.nameToPath( value.toString() );
 		return DataTypes.makeIntValue( path == null ? -1 : path.getId() );
 	}
 
-	public static Value path_id_to_name( RuntimeController controller, final Value value )
+	public static Value path_id_to_name( ScriptRuntime controller, final Value value )
 	{
 		Path path = AscensionPath.idToPath( (int) value.intValue() );
 		return DataTypes.makeStringValue( path.getName() );
 	}
 
-	public static Value to_class( RuntimeController controller, final Value value )
+	public static Value to_class( ScriptRuntime controller, final Value value )
 	{
 		String name = null;
 
@@ -3199,12 +3199,12 @@ public abstract class RuntimeLibrary
 		return DataTypes.parseClassValue( name, true );
 	}
 
-	public static Value to_stat( RuntimeController controller, final Value value )
+	public static Value to_stat( ScriptRuntime controller, final Value value )
 	{
 		return DataTypes.parseStatValue( value.toString(), true );
 	}
 
-	public static Value to_skill( RuntimeController controller, final Value value )
+	public static Value to_skill( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_INT ) )
 		{
@@ -3223,7 +3223,7 @@ public abstract class RuntimeLibrary
 		return skill;
 	}
 
-	public static Value to_skill( RuntimeController controller, final Value value1, final Value value2 )
+	public static Value to_skill( ScriptRuntime controller, final Value value1, final Value value2 )
 	{
 		String name = value1.toString();
 		String type = value2.toString();
@@ -3231,13 +3231,13 @@ public abstract class RuntimeLibrary
 		return skill;
 	}
 
-	public static Value desc_to_effect( RuntimeController controller, final Value value )
+	public static Value desc_to_effect( ScriptRuntime controller, final Value value )
 	{
 		return DataTypes.makeEffectValue( EffectDatabase.getEffectIdFromDescription( value.toString() ), true );
 	}
 
 
-	public static Value to_effect( RuntimeController controller, final Value value )
+	public static Value to_effect( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_INT ) )
 		{
@@ -3256,7 +3256,7 @@ public abstract class RuntimeLibrary
 		return effect;
 	}
 
-	public static Value to_location( RuntimeController controller, final Value value )
+	public static Value to_location( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_INT ) )
 		{
@@ -3268,7 +3268,7 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value to_familiar( RuntimeController controller, final Value value )
+	public static Value to_familiar( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_INT ) )
 		{
@@ -3278,7 +3278,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.parseFamiliarValue( value.toString(), true );
 	}
 
-	public static Value to_monster( RuntimeController controller, final Value value )
+	public static Value to_monster( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_INT ) )
 		{
@@ -3292,13 +3292,13 @@ public abstract class RuntimeLibrary
 		return monster;
 	}
 
-	public static Value image_to_monster( RuntimeController controller, final Value value )
+	public static Value image_to_monster( ScriptRuntime controller, final Value value )
 	{
 		MonsterData monster = MonsterDatabase.findMonsterByImage( value.toString() );
 		return DataTypes.makeMonsterValue( monster );
 	}
 
-	public static Value to_slot( RuntimeController controller, final Value item )
+	public static Value to_slot( ScriptRuntime controller, final Value item )
 	{
 		if ( !item.getType().equals( DataTypes.TYPE_ITEM ) )
 		{
@@ -3327,22 +3327,22 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value to_element( RuntimeController controller, final Value value )
+	public static Value to_element( ScriptRuntime controller, final Value value )
 	{
 		return DataTypes.parseElementValue( value.toString(), true );
 	}
 
-	public static Value to_coinmaster( RuntimeController controller, final Value value )
+	public static Value to_coinmaster( ScriptRuntime controller, final Value value )
 	{
 		return DataTypes.parseCoinmasterValue( value.toString(), true );
 	}
 
-	public static Value to_phylum( RuntimeController controller, final Value value )
+	public static Value to_phylum( ScriptRuntime controller, final Value value )
 	{
 		return DataTypes.parsePhylumValue( value.toString(), true );
 	}
 
-	public static Value to_bounty( RuntimeController controller, final Value value )
+	public static Value to_bounty( ScriptRuntime controller, final Value value )
 	{
 		String stringValue = value.toString();
 		int numberIndex = stringValue.indexOf( ":" );
@@ -3350,7 +3350,7 @@ public abstract class RuntimeLibrary
 			DataTypes.parseBountyValue( stringValue, true );
 	}
 
-	public static Value to_thrall( RuntimeController controller, final Value value )
+	public static Value to_thrall( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_INT ) )
 		{
@@ -3360,7 +3360,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.parseThrallValue( value.toString(), true );
 	}
 
-	public static Value to_servant( RuntimeController controller, final Value value )
+	public static Value to_servant( ScriptRuntime controller, final Value value )
 	{
 		if ( value.getType().equals( DataTypes.TYPE_INT ) )
 		{
@@ -3370,16 +3370,16 @@ public abstract class RuntimeLibrary
 		return DataTypes.parseServantValue( value.toString(), true );
 	}
 
-	public static Value to_vykea( RuntimeController controller, final Value value )
+	public static Value to_vykea( ScriptRuntime controller, final Value value )
 	{
 		return DataTypes.parseVykeaValue( value.toString(), true );
 	}
 
-	public static Value to_plural( RuntimeController controller, final Value item ) {
+	public static Value to_plural( ScriptRuntime controller, final Value item ) {
 		return new Value( ItemDatabase.getPluralName( (int) item.intValue() ) );
 	}
 
-	public static Value to_url( RuntimeController controller, final Value value )
+	public static Value to_url( ScriptRuntime controller, final Value value )
 	{
 		KoLAdventure adventure = (KoLAdventure) value.rawValue();
 		return ( adventure == null ) ? DataTypes.STRING_INIT : new Value( adventure.getRequest().getURLString() );
@@ -3388,7 +3388,7 @@ public abstract class RuntimeLibrary
 	// Functions related to daily information which get
 	// updated usually once per day.
 
-	public static Value holiday( RuntimeController controller )
+	public static Value holiday( ScriptRuntime controller )
 	{
 		Date today = new Date();
 		String gameHoliday = HolidayDatabase.getGameHoliday( today );
@@ -3409,31 +3409,31 @@ public abstract class RuntimeLibrary
 		return new Value( result );
 	}
 
-	public static Value today_to_string( RuntimeController controller )
+	public static Value today_to_string( ScriptRuntime controller )
 	{
 		return new Value( KoLConstants.DAILY_FORMAT.format( new Date() ) );
 	}
 
-	public static Value time_to_string( RuntimeController controller )
+	public static Value time_to_string( ScriptRuntime controller )
 	{
 		Calendar timestamp = new GregorianCalendar();
 		return new Value( KoLConstants.TIME_FORMAT.format( timestamp.getTime() ) );
 	}
 
-	public static Value now_to_string( RuntimeController controller, Value dateFormatValue )
+	public static Value now_to_string( ScriptRuntime controller, Value dateFormatValue )
 	{
 		Calendar timestamp = new GregorianCalendar();
 		SimpleDateFormat dateFormat = new SimpleDateFormat( dateFormatValue.toString() );
 		return new Value( dateFormat.format( timestamp.getTime() ) );
 	}
 
-	public static Value now_to_int( RuntimeController controller )
+	public static Value now_to_int( ScriptRuntime controller )
 	{
 		Calendar timestamp = new GregorianCalendar();
 		return new Value( timestamp.getTimeInMillis() );
 	}
 
-	public static Value date_to_timestamp( RuntimeController controller, Value inFormat, Value dateTimeString )
+	public static Value date_to_timestamp( ScriptRuntime controller, Value inFormat, Value dateTimeString )
 	{
 		try
 		{
@@ -3450,7 +3450,7 @@ public abstract class RuntimeLibrary
 		return new Value();
 	}
 
-	public static Value timestamp_to_date( RuntimeController controller, Value timestamp, Value outFormat )
+	public static Value timestamp_to_date( ScriptRuntime controller, Value timestamp, Value outFormat )
 	{
 		try
 		{
@@ -3467,7 +3467,7 @@ public abstract class RuntimeLibrary
 		return new Value();
 	}
 
-	public static Value format_date_time( RuntimeController controller, Value inFormat, Value dateTimeString, Value outFormat )
+	public static Value format_date_time( ScriptRuntime controller, Value inFormat, Value dateTimeString, Value outFormat )
 	{
 		Date inDate = null;
 		SimpleDateFormat dateFormat = null;
@@ -3488,37 +3488,37 @@ public abstract class RuntimeLibrary
 		return retVal;
 	}
 
-	public static Value gameday_to_string( RuntimeController controller )
+	public static Value gameday_to_string( ScriptRuntime controller )
 	{
 		return new Value( HolidayDatabase.getCalendarDayAsString( HolidayDatabase.getCalendarDay( new Date() ) ) );
 	}
 
-	public static Value gameday_to_int( RuntimeController controller )
+	public static Value gameday_to_int( ScriptRuntime controller )
 	{
 		return new Value( HolidayDatabase.getCalendarDay( new Date() ) );
 	}
 
-	public static Value gametime_to_int( RuntimeController controller )
+	public static Value gametime_to_int( ScriptRuntime controller )
 	{
 		return new Value( HolidayDatabase.getTimeDifference( new Date() ) );
 	}
 
-	public static Value rollover( RuntimeController controller )
+	public static Value rollover( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getRollover() );
 	}
 
-	public static Value moon_phase( RuntimeController controller )
+	public static Value moon_phase( ScriptRuntime controller )
 	{
 		return new Value( HolidayDatabase.getPhaseStep() );
 	}
 
-	public static Value moon_light( RuntimeController controller )
+	public static Value moon_light( ScriptRuntime controller )
 	{
 		return new Value( HolidayDatabase.getMoonlight() );
 	}
 
-	public static Value stat_bonus_today( RuntimeController controller )
+	public static Value stat_bonus_today( ScriptRuntime controller )
 	{
 		if ( ConditionalStatement.test( "today is muscle day" ) )
 		{
@@ -3538,7 +3538,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.STAT_INIT;
 	}
 
-	public static Value stat_bonus_tomorrow( RuntimeController controller )
+	public static Value stat_bonus_tomorrow( ScriptRuntime controller )
 	{
 		if ( ConditionalStatement.test( "tomorrow is muscle day" ) )
 		{
@@ -3558,17 +3558,17 @@ public abstract class RuntimeLibrary
 		return DataTypes.STAT_INIT;
 	}
 
-	public static Value session_logs( RuntimeController controller, final Value dayCount )
+	public static Value session_logs( ScriptRuntime controller, final Value dayCount )
 	{
 		return RuntimeLibrary.getSessionLogs( controller, KoLCharacter.getUserName(), (int) dayCount.intValue() );
 	}
 
-	public static Value session_logs( RuntimeController controller, final Value player, final Value dayCount )
+	public static Value session_logs( ScriptRuntime controller, final Value player, final Value dayCount )
 	{
 		return RuntimeLibrary.getSessionLogs( controller, player.toString(), (int) dayCount.intValue() );
 	}
 
-	private static Value getSessionLogs( RuntimeController controller, final String name, final int dayCount )
+	private static Value getSessionLogs( ScriptRuntime controller, final String name, final int dayCount )
 	{
 		if ( dayCount < 0 )
 		{
@@ -3594,7 +3594,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value session_logs ( RuntimeController controller, final Value playerName,
+	public static Value session_logs ( ScriptRuntime controller, final Value playerName,
 										 final Value baseDate, final Value count )
 	{
 		String pName = playerName.contentString;
@@ -3680,7 +3680,7 @@ public abstract class RuntimeLibrary
 
 	// Major functions related to adventuring and item management.
 
-	public static Value adventure( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value adventure( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		boolean countThenLocation = arg1.getType().equals( DataTypes.INT_TYPE );
 		int count = (int) ( countThenLocation ? arg1.intValue() : arg2.intValue() );
@@ -3695,14 +3695,14 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value adventure( RuntimeController controller, final Value arg1, final Value arg2, final Value filterFunction )
+	public static Value adventure( ScriptRuntime controller, final Value arg1, final Value arg2, final Value filterFunction )
 	{
 		try
 		{
 			String filter = filterFunction.toString();
-			if (controller instanceof Interpreter)
+			if (controller instanceof AshRuntime)
 			{
-				Macrofier.setMacroOverride( filter, (Interpreter) controller );
+				Macrofier.setMacroOverride( filter, (AshRuntime) controller );
 			}
 
 			RuntimeLibrary.adventure( controller, arg1, arg2 );
@@ -3712,7 +3712,7 @@ public abstract class RuntimeLibrary
 			Macrofier.resetMacroOverride();
 		}
 
-		if ( controller.getState() == RuntimeController.State.EXIT )
+		if ( controller.getState() == ScriptRuntime.State.EXIT )
 		{
 			return DataTypes.VOID_VALUE;
 		}
@@ -3720,7 +3720,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value adv1( RuntimeController controller, final Value locationValue, final Value adventuresUsedValue, final Value filterFunction )
+	public static Value adv1( ScriptRuntime controller, final Value locationValue, final Value adventuresUsedValue, final Value filterFunction )
 	{
 		KoLAdventure adventure = (KoLAdventure) locationValue.rawValue();
 
@@ -3733,9 +3733,9 @@ public abstract class RuntimeLibrary
 		try
 		{
 			adventure.overrideAdventuresUsed( (int) adventuresUsedValue.intValue() );
-			if (controller instanceof Interpreter)
+			if (controller instanceof AshRuntime)
 			{
-				Macrofier.setMacroOverride( filterFunction.toString(), (Interpreter) controller );
+				Macrofier.setMacroOverride( filterFunction.toString(), (AshRuntime) controller );
 			}
 			KoLmafia.redoSkippedAdventures = false;
 
@@ -3748,7 +3748,7 @@ public abstract class RuntimeLibrary
 			adventure.overrideAdventuresUsed( -1 );
 		}
 
-		if (controller.getState() == RuntimeController.State.EXIT)
+		if (controller.getState() == ScriptRuntime.State.EXIT)
 		{
 			return DataTypes.VOID_VALUE;
 		}
@@ -3756,19 +3756,19 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value get_ccs_action( RuntimeController controller, final Value index )
+	public static Value get_ccs_action( ScriptRuntime controller, final Value index )
 	{
 		return new Value(
 			CombatActionManager.getCombatAction(
 				FightRequest.getCurrentKey(), (int) index.intValue(), true ) );
 	}
 
-	public static Value can_still_steal( RuntimeController controller )
+	public static Value can_still_steal( ScriptRuntime controller )
 	{
 		return new Value( FightRequest.canStillSteal() );
 	}
 
-	public static Value add_item_condition( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value add_item_condition( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		boolean countThenItem = arg1.getType().equals( DataTypes.INT_TYPE );
 		int count = (int) (countThenItem ? arg1 : arg2 ).intValue();
@@ -3782,7 +3782,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value remove_item_condition( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value remove_item_condition( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		boolean countThenItem = arg1.getType().equals( DataTypes.INT_TYPE );
 		int count = (int) (countThenItem ? arg1 : arg2 ).intValue();
@@ -3797,7 +3797,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value goal_exists( RuntimeController controller, final Value check )
+	public static Value goal_exists( ScriptRuntime controller, final Value check )
 	{
 		String checkType = check.toString();
 
@@ -3812,12 +3812,12 @@ public abstract class RuntimeLibrary
 		return DataTypes.FALSE_VALUE;
 	}
 
-	public static Value is_goal( RuntimeController controller, final Value item )
+	public static Value is_goal( ScriptRuntime controller, final Value item )
 	{
 		return DataTypes.makeBooleanValue( GoalManager.hasItemGoal( (int) item.intValue() ) );
 	}
 
-	public static Value get_goals( RuntimeController controller )
+	public static Value get_goals( ScriptRuntime controller )
 	{
 		List<AdventureResult> goals = GoalManager.getGoals();
 		AggregateType type = new AggregateType( DataTypes.STRING_TYPE, goals.size() );
@@ -3831,7 +3831,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_moods( RuntimeController controller )
+	public static Value get_moods( ScriptRuntime controller )
 	{
 		List<Mood> moods = MoodManager.getAvailableMoods();
 		AggregateType type = new AggregateType( DataTypes.STRING_TYPE, moods.size() );
@@ -3845,7 +3845,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value mood_list( RuntimeController controller )
+	public static Value mood_list( ScriptRuntime controller )
 	{
 		List<MoodTrigger> moodTriggers = MoodManager.getTriggers();
 		AggregateType type = new AggregateType( DataTypes.STRING_TYPE, moodTriggers.size() );
@@ -3860,12 +3860,12 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value buy( RuntimeController controller, final Value item )
+	public static Value buy( ScriptRuntime controller, final Value item )
 	{
 		return buy(controller, new Value( 1 ), item);
 	}
 
-	public static Value buy( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value buy( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -3886,7 +3886,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( initialAmount + count == itemToBuy.getCount( KoLConstants.inventory ) );
 	}
 
-	public static Value buy( RuntimeController controller, final Value arg1, final Value arg2, final Value arg3 )
+	public static Value buy( ScriptRuntime controller, final Value arg1, final Value arg2, final Value arg3 )
 	{
 		if ( arg1.getType().equals( DataTypes.TYPE_COINMASTER ) )
 		{
@@ -3915,12 +3915,12 @@ public abstract class RuntimeLibrary
 		return new Value( itemToBuy.getCount( KoLConstants.inventory ) - initialAmount );
 	}
 
-	public static Value buy_using_storage( RuntimeController controller, final Value item )
+	public static Value buy_using_storage( ScriptRuntime controller, final Value item )
 	{
 		return buy_using_storage(controller, new Value( 1 ), item);
 	}
 
-	public static Value buy_using_storage( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value buy_using_storage( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		if ( KoLCharacter.canInteract() )
 		{
@@ -3946,7 +3946,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( initialAmount + count == itemToBuy.getCount( KoLConstants.storage ) );
 	}
 
-	public static Value buy_using_storage( RuntimeController controller, final Value arg1, final Value arg2, final Value arg3 )
+	public static Value buy_using_storage( ScriptRuntime controller, final Value arg1, final Value arg2, final Value arg3 )
 	{
 		if ( KoLCharacter.canInteract() )
 		{
@@ -3977,27 +3977,27 @@ public abstract class RuntimeLibrary
 
 	// Coinmaster functions
 
-	public static Value is_accessible( RuntimeController controller, final Value master )
+	public static Value is_accessible( ScriptRuntime controller, final Value master )
 	{
 		CoinmasterData data = (CoinmasterData) master.rawValue();
 		return DataTypes.makeBooleanValue( data != null && data.isAccessible() );
 	}
 
-	public static Value inaccessible_reason( RuntimeController controller, final Value master )
+	public static Value inaccessible_reason( ScriptRuntime controller, final Value master )
 	{
 		CoinmasterData data = (CoinmasterData) master.rawValue();
 		String reason = data != null ? data.accessible() : null;
 		return new Value( reason != null ? reason : "" );
 	}
 
-	public static Value visit( RuntimeController controller, final Value master )
+	public static Value visit( ScriptRuntime controller, final Value master )
 	{
 		CoinmasterData data = (CoinmasterData) master.rawValue();
 		CoinMasterRequest.visit( data );
 		return RuntimeLibrary.continueValue();
 	}
 
-	private static Value coinmaster_buy( RuntimeController controller, final Value master, final Value countValue, final Value itemValue )
+	private static Value coinmaster_buy( ScriptRuntime controller, final Value master, final Value countValue, final Value itemValue )
 	{
 		int count = (int) countValue.intValue();
 		if ( count <= 0 )
@@ -4011,7 +4011,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( initialAmount + count == item.getCount( KoLConstants.inventory ) );
 	}
 
-	public static Value sell( RuntimeController controller, final Value master, final Value countValue, final Value itemValue )
+	public static Value sell( ScriptRuntime controller, final Value master, final Value countValue, final Value itemValue )
 	{
 		int count = (int) countValue.intValue();
 		if ( count <= 0 )
@@ -4037,7 +4037,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value craft( RuntimeController controller, final Value modeValue, final Value countValue, final Value item1, final Value item2 )
+	public static Value craft( ScriptRuntime controller, final Value modeValue, final Value countValue, final Value item1, final Value item2 )
 	{
 		int count = (int) countValue.intValue();
 		if ( count <= 0 )
@@ -4073,93 +4073,93 @@ public abstract class RuntimeLibrary
 		return UseItemRequest.lastUpdate.equals( "" ) ? RuntimeLibrary.continueValue() : DataTypes.FALSE_VALUE;
 	}
 
-	public static Value create( RuntimeController controller, final Value item )
+	public static Value create( ScriptRuntime controller, final Value item )
 	{
 		return create(controller, new Value( 1 ), item);
 	}
 
-	public static Value create( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value create( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		execute_item_quantity( "create", arg1, arg2 );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value use( RuntimeController controller, final Value item )
+	public static Value use( ScriptRuntime controller, final Value item )
 	{
 		return use(controller, new Value( 1 ), item);
 	}
 
-	public static Value use( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value use( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		return execute_item_quantity( "use", arg1, arg2 );
 	}
 
-	public static Value eat( RuntimeController controller, final Value item )
+	public static Value eat( ScriptRuntime controller, final Value item )
 	{
 		return eat(controller, new Value( 1 ), item);
 	}
 
-	public static Value eat( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value eat( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		return execute_item_quantity( "eat", arg1, arg2 );
 	}
 
-	public static Value eatsilent( RuntimeController controller, final Value item )
+	public static Value eatsilent( ScriptRuntime controller, final Value item )
 	{
 		return eatsilent(controller, new Value( 1 ), item);
 	}
 
-	public static Value eatsilent( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value eatsilent( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		return execute_item_quantity( "eatsilent", arg1, arg2 );
 	}
 
-	public static Value drink( RuntimeController controller, final Value item )
+	public static Value drink( ScriptRuntime controller, final Value item )
 	{
 		return drink(controller, new Value( 1 ), item);
 	}
 
-	public static Value drink( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value drink( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		return execute_item_quantity( "drink", arg1, arg2 );
 	}
 
-	public static Value overdrink( RuntimeController controller, final Value item )
+	public static Value overdrink( ScriptRuntime controller, final Value item )
 	{
 		return overdrink(controller, new Value( 1 ), item);
 	}
 
-	public static Value overdrink( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value overdrink( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		return execute_item_quantity( "overdrink", arg1, arg2 );
 	}
 
-	public static Value drinksilent( RuntimeController controller, final Value item )
+	public static Value drinksilent( ScriptRuntime controller, final Value item )
 	{
 		return drinksilent(controller, new Value( 1 ), item);
 	}
 
-	public static Value drinksilent( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value drinksilent( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		return execute_item_quantity( "drinksilent", arg1, arg2 );
 	}
 
-	public static Value chew( RuntimeController controller, final Value item )
+	public static Value chew( ScriptRuntime controller, final Value item )
 	{
 		return chew(controller, new Value( 1 ), item);
 	}
 
-	public static Value chew( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value chew( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		return execute_item_quantity( "chew", arg1, arg2 );
 	}
 
-	public static Value last_item_message( RuntimeController controller )
+	public static Value last_item_message( ScriptRuntime controller )
 	{
 		return new Value( UseItemRequest.lastUpdate );
 	}
 
-	public static Value empty_closet( RuntimeController controller )
+	public static Value empty_closet( ScriptRuntime controller )
 	{
 		if ( controller.getBatched() != null )
 		{
@@ -4173,7 +4173,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value put_closet( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value put_closet( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4203,7 +4203,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value put_closet( RuntimeController controller, final Value arg1 )
+	public static Value put_closet( ScriptRuntime controller, final Value arg1 )
 	{
 		if ( !arg1.getType().equals( DataTypes.INT_TYPE ) )
 		{
@@ -4231,29 +4231,29 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value put_shop( RuntimeController controller, final Value priceValue, final Value limitValue, final Value itemValue )
+	public static Value put_shop( ScriptRuntime controller, final Value priceValue, final Value limitValue, final Value itemValue )
 	{
 		return put_shop( controller, priceValue, limitValue, InventoryManager.getCount( (int) itemValue.contentLong ), itemValue, false );
 	}
 
-	public static Value put_shop( RuntimeController controller, final Value priceValue, final Value limitValue, final Value qtyValue, final Value itemValue )
+	public static Value put_shop( ScriptRuntime controller, final Value priceValue, final Value limitValue, final Value qtyValue, final Value itemValue )
 	{
 		return put_shop( controller, priceValue, limitValue, qtyValue.contentLong, itemValue, false );
 	}
 
-	public static Value put_shop_using_storage( RuntimeController controller, final Value priceValue, final Value limitValue, final Value itemValue )
+	public static Value put_shop_using_storage( ScriptRuntime controller, final Value priceValue, final Value limitValue, final Value itemValue )
 	{
 		AdventureResult item = ItemPool.get( (int) itemValue.intValue(), 0 );
 		return put_shop( controller, priceValue, limitValue, item.getCount( KoLConstants.storage ), itemValue, true );
 	}
 
-	public static Value put_shop_using_storage( RuntimeController controller, final Value priceValue, final Value limitValue, final Value qtyValue, final Value itemValue )
+	public static Value put_shop_using_storage( ScriptRuntime controller, final Value priceValue, final Value limitValue, final Value qtyValue, final Value itemValue )
 	{
 		return put_shop( controller, priceValue, limitValue, qtyValue.contentLong, itemValue, true );
 	}
 
 	// Used internally only.
-	private static Value put_shop( RuntimeController controller, final Value priceValue, final Value limitValue, final long qty, final Value itemValue, boolean usingStorage )
+	private static Value put_shop( ScriptRuntime controller, final Value priceValue, final Value limitValue, final long qty, final Value itemValue, boolean usingStorage )
 	{
 		if ( qty <= 0 )
 		{
@@ -4283,13 +4283,13 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value reprice_shop( RuntimeController controller, final Value priceValue, final Value itemValue )
+	public static Value reprice_shop( ScriptRuntime controller, final Value priceValue, final Value itemValue )
 	{
 		int itemId = (int) itemValue.intValue();
 		return reprice_shop( controller, priceValue, new Value( StoreManager.getLimit( itemId ) ), itemValue );
 	}
 
-	public static Value reprice_shop( RuntimeController controller, final Value priceValue, final Value limitValue, final Value itemValue )
+	public static Value reprice_shop( ScriptRuntime controller, final Value priceValue, final Value limitValue, final Value itemValue )
 	{
 		int itemId = (int) itemValue.intValue();
 		int price = (int) priceValue.intValue();
@@ -4314,7 +4314,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value put_stash( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value put_stash( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4347,7 +4347,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value put_display( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value put_display( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4379,7 +4379,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value take_closet( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value take_closet( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4410,7 +4410,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value take_closet( RuntimeController controller, final Value arg1 )
+	public static Value take_closet( ScriptRuntime controller, final Value arg1 )
 	{
 		if ( !arg1.getType().equals( DataTypes.INT_TYPE ) )
 		{
@@ -4439,7 +4439,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value take_shop( RuntimeController controller, final Value itemValue )
+	public static Value take_shop( ScriptRuntime controller, final Value itemValue )
 	{
 		int itemId = (int) itemValue.intValue();
 
@@ -4471,7 +4471,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value take_shop( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value take_shop( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4502,7 +4502,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value take_storage( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value take_storage( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4532,7 +4532,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value take_display( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value take_display( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4565,7 +4565,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value take_stash( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value take_stash( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4598,7 +4598,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value autosell( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value autosell( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4630,7 +4630,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value hermit( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value hermit( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4649,7 +4649,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value retrieve_item( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value retrieve_item( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -4667,12 +4667,12 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( InventoryManager.retrieveItem( ItemPool.get( item, count ) ) );
 	}
 
-	public static Value retrieve_item( RuntimeController controller, final Value item )
+	public static Value retrieve_item( ScriptRuntime controller, final Value item )
 	{
 		return retrieve_item(controller, new Value( 1 ), item);
 	}
 
-	public static Value faxbot( RuntimeController controller, final Value monsterName, final Value botName)
+	public static Value faxbot( ScriptRuntime controller, final Value monsterName, final Value botName)
 	{
 		MonsterData monster = (MonsterData) monsterName.rawValue();
 
@@ -4693,7 +4693,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( bot.request( monster ) );
 	}
 
-	public static Value faxbot( RuntimeController controller, final Value monsterName )
+	public static Value faxbot( ScriptRuntime controller, final Value monsterName )
 	{
 		MonsterData monster = (MonsterData) monsterName.rawValue();
 
@@ -4721,7 +4721,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.FALSE_VALUE;
 	}
 
-	public static Value can_faxbot( RuntimeController controller, final Value arg )
+	public static Value can_faxbot( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -4764,7 +4764,7 @@ public abstract class RuntimeLibrary
 	// Major functions which provide item-related
 	// information.
 
-	public static Value get_inventory( RuntimeController controller )
+	public static Value get_inventory( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4781,7 +4781,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_closet( RuntimeController controller )
+	public static Value get_closet( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4798,7 +4798,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_storage( RuntimeController controller )
+	public static Value get_storage( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4815,7 +4815,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_free_pulls( RuntimeController controller )
+	public static Value get_free_pulls( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4832,7 +4832,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_shop( RuntimeController controller )
+	public static Value get_shop( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4857,7 +4857,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_shop_log( RuntimeController controller )
+	public static Value get_shop_log( ScriptRuntime controller )
 	{
 		if ( !KoLCharacter.hasStore() )
 		{
@@ -4878,7 +4878,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_stash( RuntimeController controller )
+	public static Value get_stash( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4898,7 +4898,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_campground( RuntimeController controller )
+	public static Value get_campground( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4928,7 +4928,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_clan_lounge( RuntimeController controller )
+	public static Value get_clan_lounge( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4942,7 +4942,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_clan_rumpus( RuntimeController controller )
+	public static Value get_clan_rumpus( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.STRING_TO_INT_TYPE );
 
@@ -4963,7 +4963,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_chateau( RuntimeController controller )
+	public static Value get_chateau( ScriptRuntime controller )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -4977,12 +4977,12 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_dwelling( RuntimeController controller )
+	public static Value get_dwelling( ScriptRuntime controller )
 	{
 		return DataTypes.makeItemValue( CampgroundRequest.getCurrentDwelling().getItemId(), true );
 	}
 
-	public static Value my_garden_type( RuntimeController controller )
+	public static Value my_garden_type( ScriptRuntime controller )
 	{
 		CropType crop = CampgroundRequest.getCropType();
 		return new Value( crop == null ? "none" : crop.name().toLowerCase() );
@@ -4992,7 +4992,7 @@ public abstract class RuntimeLibrary
 	private static final int WAD2NUGGET = -6;
 	private static final int WAD2GEM = 1321;
 
-	public static Value get_related( RuntimeController controller, Value item, Value type )
+	public static Value get_related( ScriptRuntime controller, Value item, Value type )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 		String which = type.toString();
@@ -5148,48 +5148,48 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value is_tradeable( RuntimeController controller, final Value item )
+	public static Value is_tradeable( ScriptRuntime controller, final Value item )
 	{
 		return DataTypes.makeBooleanValue( ItemDatabase.isTradeable( (int) item.intValue() ) );
 	}
 
-	public static Value is_giftable( RuntimeController controller, final Value item )
+	public static Value is_giftable( ScriptRuntime controller, final Value item )
 	{
 		return DataTypes.makeBooleanValue( ItemDatabase.isGiftable( (int) item.intValue() ) );
 	}
 
-	public static Value is_displayable( RuntimeController controller, final Value item )
+	public static Value is_displayable( ScriptRuntime controller, final Value item )
 	{
 		int itemId = (int) item.intValue();
 		return DataTypes.makeBooleanValue( !ItemDatabase.isQuestItem( itemId ) && !ItemDatabase.isVirtualItem( itemId ) );
 	}
 
-	public static Value is_discardable( RuntimeController controller, final Value item )
+	public static Value is_discardable( ScriptRuntime controller, final Value item )
 	{
 		return DataTypes.makeBooleanValue( ItemDatabase.isDiscardable( (int) item.intValue() ) );
 	}
 
-	public static Value is_npc_item( RuntimeController controller, final Value item )
+	public static Value is_npc_item( ScriptRuntime controller, final Value item )
 	{
 		return DataTypes.makeBooleanValue( NPCStoreDatabase.contains( (int) item.intValue(), false ) );
 	}
 
-	public static Value is_coinmaster_item( RuntimeController controller, final Value item )
+	public static Value is_coinmaster_item( ScriptRuntime controller, final Value item )
 	{
 		return DataTypes.makeBooleanValue( CoinmastersDatabase.contains( (int) item.intValue(), false ) );
 	}
 
-	public static Value autosell_price( RuntimeController controller, final Value item )
+	public static Value autosell_price( ScriptRuntime controller, final Value item )
 	{
 		return new Value( ItemDatabase.getPriceById( (int) item.intValue() ) );
 	}
 
-	public static Value mall_price( RuntimeController controller, final Value item )
+	public static Value mall_price( ScriptRuntime controller, final Value item )
 	{
 		return new Value( StoreManager.getMallPrice( ItemPool.get( (int) item.intValue(), 0 ) ) );
 	}
 
-	public static Value mall_prices( RuntimeController controller, final Value arg )
+	public static Value mall_prices( ScriptRuntime controller, final Value arg )
 	{
 		if ( arg.getType().equals( DataTypes.STRING_TYPE ) )
 		{
@@ -5215,12 +5215,12 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeIntValue( result );
 	}
 
-	public static Value mall_prices( RuntimeController controller, final Value category, final Value tiers )
+	public static Value mall_prices( ScriptRuntime controller, final Value category, final Value tiers )
 	{
 		return new Value( StoreManager.getMallPrices( category.toString(), tiers.toString() ) );
 	}
 
-	public static Value npc_price( RuntimeController controller, final Value item )
+	public static Value npc_price( ScriptRuntime controller, final Value item )
 	{
 		int itemId = (int) item.intValue();
 		String it = ItemDatabase.getCanonicalName( itemId );
@@ -5232,7 +5232,7 @@ public abstract class RuntimeLibrary
 			0 );
 	}
  
-	public static Value shop_price( RuntimeController controller, final Value item )
+	public static Value shop_price( ScriptRuntime controller, final Value item )
 	{
 		if ( !KoLCharacter.hasStore() )
 		{
@@ -5249,41 +5249,41 @@ public abstract class RuntimeLibrary
 
 	// Coinmaster functions
 
-	public static Value buys_item( RuntimeController controller, final Value master, final Value item )
+	public static Value buys_item( ScriptRuntime controller, final Value master, final Value item )
 	{
 		CoinmasterData data = (CoinmasterData) master.rawValue();
 		return DataTypes.makeBooleanValue( data != null && data.canSellItem( (int) item.intValue() ) );
 	}
 
-	public static Value buy_price( RuntimeController controller, final Value master, final Value item )
+	public static Value buy_price( ScriptRuntime controller, final Value master, final Value item )
 	{
 		CoinmasterData data = (CoinmasterData) master.rawValue();
 		return DataTypes.makeIntValue( data != null ? data.getSellPrice( (int) item.intValue() ) : 0 );
 	}
 
-	public static Value sells_item( RuntimeController controller, final Value master, final Value item )
+	public static Value sells_item( ScriptRuntime controller, final Value master, final Value item )
 	{
 		CoinmasterData data = (CoinmasterData) master.rawValue();
 		return DataTypes.makeBooleanValue( data != null && data.canBuyItem( (int) item.intValue() ) );
 	}
 
-	public static Value sell_price( RuntimeController controller, final Value master, final Value item )
+	public static Value sell_price( ScriptRuntime controller, final Value master, final Value item )
 	{
 		CoinmasterData data = (CoinmasterData) master.rawValue();
 		return DataTypes.makeIntValue( data != null ? data.getBuyPrice( (int) item.intValue() ) : 0 );
 	}
 
-	public static Value historical_price( RuntimeController controller, final Value item )
+	public static Value historical_price( ScriptRuntime controller, final Value item )
 	{
 		return new Value( MallPriceDatabase.getPrice( (int) item.intValue() ) );
 	}
 
-	public static Value historical_age( RuntimeController controller, final Value item )
+	public static Value historical_age( ScriptRuntime controller, final Value item )
 	{
 		return new Value( MallPriceDatabase.getAge( (int) item.intValue() ) );
 	}
 
-	public static Value daily_special( RuntimeController controller )
+	public static Value daily_special( ScriptRuntime controller )
 	{
 		AdventureResult special =
 			KoLCharacter.gnomadsAvailable() ? MicroBreweryRequest.getDailySpecial() : KoLCharacter.canadiaAvailable() ? ChezSnooteeRequest.getDailySpecial() : null;
@@ -5291,37 +5291,37 @@ public abstract class RuntimeLibrary
 		return special == null ? DataTypes.ITEM_INIT : DataTypes.makeItemValue( special.getItemId(), true );
 	}
 
-	public static Value refresh_shop( RuntimeController controller )
+	public static Value refresh_shop( ScriptRuntime controller )
 	{
 		RequestThread.postRequest( new ManageStoreRequest() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value refresh_stash( RuntimeController controller )
+	public static Value refresh_stash( ScriptRuntime controller )
 	{
 		RequestThread.postRequest( new ClanStashRequest() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value available_amount( RuntimeController controller, final Value arg )
+	public static Value available_amount( ScriptRuntime controller, final Value arg )
 	{
 		AdventureResult item = ItemPool.get( (int) arg.intValue(), 0 );
 		return DataTypes.makeIntValue( InventoryManager.getAccessibleCount( item ) );
 	}
 
-	public static Value item_amount( RuntimeController controller, final Value arg )
+	public static Value item_amount( ScriptRuntime controller, final Value arg )
 	{
 		AdventureResult item = ItemPool.get( (int) arg.intValue(), 0 );
 		return new Value( item.getCount( KoLConstants.inventory ) );
 	}
 
-	public static Value closet_amount( RuntimeController controller, final Value arg )
+	public static Value closet_amount( ScriptRuntime controller, final Value arg )
 	{
 		AdventureResult item = ItemPool.get( (int) arg.intValue(), 0 );
 		return new Value( item.getCount( KoLConstants.closet ) );
 	}
 
-	public static Value equipped_amount( RuntimeController controller, final Value arg )
+	public static Value equipped_amount( ScriptRuntime controller, final Value arg )
 	{
 		AdventureResult item = ItemPool.get( (int) arg.intValue(), 0 );
 		int runningTotal = 0;
@@ -5337,13 +5337,13 @@ public abstract class RuntimeLibrary
 		return new Value( runningTotal );
 	}
 
-	public static Value creatable_amount( RuntimeController controller, final Value arg )
+	public static Value creatable_amount( ScriptRuntime controller, final Value arg )
 	{
 		CreateItemRequest item = CreateItemRequest.getInstance( (int) arg.intValue() );
 		return new Value( item == null ? 0 : item.getQuantityPossible() );
 	}
 
-	public static Value creatable_turns( RuntimeController controller, final Value itemId )
+	public static Value creatable_turns( ScriptRuntime controller, final Value itemId )
 	{
 		AdventureResult item = ItemPool.get( (int) itemId.intValue() );
 		if ( item == null )
@@ -5355,7 +5355,7 @@ public abstract class RuntimeLibrary
 		return new Value( concoction == null ? 0 : concoction.getAdventuresNeeded( initialAmount + 1 ) );
 	}
 
-	public static Value creatable_turns( RuntimeController controller, final Value itemId, final Value count )
+	public static Value creatable_turns( ScriptRuntime controller, final Value itemId, final Value count )
 	{
 		AdventureResult item = ItemPool.get( (int) itemId.intValue() );
 		int number = (int) count.intValue();
@@ -5368,7 +5368,7 @@ public abstract class RuntimeLibrary
 		return new Value( concoction == null ? 0 : concoction.getAdventuresNeeded( initialAmount + number ) );
 	}
 
-	public static Value creatable_turns( RuntimeController controller, final Value itemId, final Value count, final Value freeCrafting )
+	public static Value creatable_turns( ScriptRuntime controller, final Value itemId, final Value count, final Value freeCrafting )
 	{
 		AdventureResult item = ItemPool.get( (int) itemId.intValue() );
 		int number = (int) count.intValue();
@@ -5382,7 +5382,7 @@ public abstract class RuntimeLibrary
 		return new Value( concoction == null ? 0 : concoction.getAdventuresNeeded( initialAmount + number, considerFreeCrafting ) );
 	}
 
-	public static Value get_ingredients( RuntimeController controller, final Value arg )
+	public static Value get_ingredients( ScriptRuntime controller, final Value arg )
 	{
 		MapValue value = new MapValue( DataTypes.ITEM_TO_INT_TYPE );
 
@@ -5415,13 +5415,13 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value storage_amount( RuntimeController controller, final Value arg )
+	public static Value storage_amount( ScriptRuntime controller, final Value arg )
 	{
 		AdventureResult item = ItemPool.get( (int) arg.intValue(), 0 );
 		return new Value( item.getCount( KoLConstants.storage ) + item.getCount( KoLConstants.freepulls ) );
 	}
 
-	public static Value display_amount( RuntimeController controller, final Value arg )
+	public static Value display_amount( ScriptRuntime controller, final Value arg )
 	{
 		if ( !KoLCharacter.hasDisplayCase() )
 		{
@@ -5461,7 +5461,7 @@ public abstract class RuntimeLibrary
 		return list.get( index );
 	}
 
-	public static Value shop_amount( RuntimeController controller, final Value arg )
+	public static Value shop_amount( ScriptRuntime controller, final Value arg )
 	{
 		SoldItem item = getSoldItem( (int) arg.intValue() );
 
@@ -5473,7 +5473,7 @@ public abstract class RuntimeLibrary
 		return new Value( item.getQuantity() );
 	}
 
-	public static Value shop_limit( RuntimeController controller, final Value arg )
+	public static Value shop_limit( ScriptRuntime controller, final Value arg )
 	{
 		SoldItem item = getSoldItem( (int) arg.intValue() );
 
@@ -5485,7 +5485,7 @@ public abstract class RuntimeLibrary
 		return new Value( item.getLimit() );		
 	}
 
-	public static Value stash_amount( RuntimeController controller, final Value arg )
+	public static Value stash_amount( ScriptRuntime controller, final Value arg )
 	{
 		if ( !ClanManager.stashRetrieved )
 		{
@@ -5497,22 +5497,22 @@ public abstract class RuntimeLibrary
 		return new Value( item.getCount( stash ) );
 	}
 
-	public static Value pulls_remaining( RuntimeController controller )
+	public static Value pulls_remaining( ScriptRuntime controller )
 	{
 		return new Value( ConcoctionDatabase.getPullsRemaining() );
 	}
 
-	public static Value stills_available( RuntimeController controller )
+	public static Value stills_available( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getStillsAvailable() );
 	}
 
-	public static Value have_mushroom_plot( RuntimeController controller )
+	public static Value have_mushroom_plot( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( MushroomManager.ownsPlot() );
 	}
 
-	public static Value craft_type( RuntimeController controller, final Value arg )
+	public static Value craft_type( ScriptRuntime controller, final Value arg )
 	{
 		int itemId = (int) arg.intValue();
 		Concoction conc = ConcoctionPool.get( itemId );
@@ -5528,18 +5528,18 @@ public abstract class RuntimeLibrary
 	// The following functions pertain to providing updated
 	// information relating to the player.
 
-	public static Value refresh_status( RuntimeController controller )
+	public static Value refresh_status( ScriptRuntime controller )
 	{
 		ApiRequest.updateStatus();
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value restore_hp( RuntimeController controller, final Value amount )
+	public static Value restore_hp( ScriptRuntime controller, final Value amount )
 	{
 		return RuntimeLibrary.restore( true, (int) amount.intValue() );
 	}
 
-	public static Value restore_mp( RuntimeController controller, final Value amount )
+	public static Value restore_mp( ScriptRuntime controller, final Value amount )
 	{
 		return RuntimeLibrary.restore( false, (int) amount.intValue() );
 	}
@@ -5560,7 +5560,7 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value mood_execute( RuntimeController controller, final Value multiplicity )
+	public static Value mood_execute( ScriptRuntime controller, final Value multiplicity )
 	{
 		if ( RecoveryManager.isRecoveryActive() || MoodManager.isExecuting() )
 		{
@@ -5571,103 +5571,103 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value my_name( RuntimeController controller )
+	public static Value my_name( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getUserName() );
 	}
 
-	public static Value my_id( RuntimeController controller )
+	public static Value my_id( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getPlayerId() );
 	}
 
-	public static Value my_hash( RuntimeController controller )
+	public static Value my_hash( ScriptRuntime controller )
 	{
 		return new Value( GenericRequest.passwordHash );
 	}
 
-	public static Value my_sign( RuntimeController controller )
+	public static Value my_sign( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getSign() );
 	}
 
-	public static Value my_path( RuntimeController controller )
+	public static Value my_path( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getPath().getName() );
 	}
 
-	public static Value my_path_id( RuntimeController controller )
+	public static Value my_path_id( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getPath().getId() );
 	}
 
-	public static Value in_muscle_sign( RuntimeController controller )
+	public static Value in_muscle_sign( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.inMuscleSign() );
 	}
 
-	public static Value in_mysticality_sign( RuntimeController controller )
+	public static Value in_mysticality_sign( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.inMysticalitySign() );
 	}
 
-	public static Value in_moxie_sign( RuntimeController controller )
+	public static Value in_moxie_sign( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.inMoxieSign() );
 	}
 
-	public static Value in_bad_moon( RuntimeController controller )
+	public static Value in_bad_moon( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.inBadMoon() );
 	}
 
-	public static Value my_class( RuntimeController controller )
+	public static Value my_class( ScriptRuntime controller )
 	{
 		return DataTypes.makeClassValue( KoLCharacter.getClassType() );
 	}
 
-	public static Value my_level( RuntimeController controller )
+	public static Value my_level( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getLevel() );
 	}
 
-	public static Value my_hp( RuntimeController controller )
+	public static Value my_hp( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getCurrentHP() );
 	}
 
-	public static Value my_maxhp( RuntimeController controller )
+	public static Value my_maxhp( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getMaximumHP() );
 	}
 
-	public static Value my_mp( RuntimeController controller )
+	public static Value my_mp( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getCurrentMP() );
 	}
 
-	public static Value my_maxmp( RuntimeController controller )
+	public static Value my_maxmp( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getMaximumMP() );
 	}
 
-	public static Value my_pp( RuntimeController controller )
+	public static Value my_pp( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getCurrentPP() );
 	}
 
-	public static Value my_maxpp( RuntimeController controller )
+	public static Value my_maxpp( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getMaximumPP() );
 	}
 
-	public static Value my_primestat( RuntimeController controller )
+	public static Value my_primestat( ScriptRuntime controller )
 	{
 		int primeIndex = KoLCharacter.getPrimeIndex();
 		return primeIndex == 0 ? DataTypes.MUSCLE_VALUE : primeIndex == 1 ? DataTypes.MYSTICALITY_VALUE : DataTypes.MOXIE_VALUE;
 	}
 
-	public static Value my_basestat( RuntimeController controller, final Value arg )
+	public static Value my_basestat( ScriptRuntime controller, final Value arg )
 	{
 		String stat = arg.toString();
 
@@ -5700,7 +5700,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.ZERO_VALUE;
 	}
 
-	public static Value my_buffedstat( RuntimeController controller, final Value arg )
+	public static Value my_buffedstat( ScriptRuntime controller, final Value arg )
 	{
 		String stat = arg.toString();
 
@@ -5720,82 +5720,82 @@ public abstract class RuntimeLibrary
 		return DataTypes.ZERO_VALUE;
 	}
 
-	public static Value my_fury( RuntimeController controller )
+	public static Value my_fury( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getFury() );
 	}
 
-	public static Value my_maxfury( RuntimeController controller )
+	public static Value my_maxfury( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getFuryLimit() );
 	}
 
-	public static Value my_soulsauce( RuntimeController controller )
+	public static Value my_soulsauce( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getSoulsauce() );
 	}
 
-	public static Value my_discomomentum( RuntimeController controller )
+	public static Value my_discomomentum( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getDiscoMomentum() );
 	}
 
-	public static Value my_audience( RuntimeController controller )
+	public static Value my_audience( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getAudience() );
 	}
 
-	public static Value my_absorbs( RuntimeController controller )
+	public static Value my_absorbs( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getAbsorbs() );
 	}
 
-	public static Value my_thunder( RuntimeController controller )
+	public static Value my_thunder( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getThunder() );
 	}
 
-	public static Value my_rain( RuntimeController controller )
+	public static Value my_rain( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getRain() );
 	}
 
-	public static Value my_lightning( RuntimeController controller )
+	public static Value my_lightning( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getLightning() );
 	}
 
-	public static Value my_mask( RuntimeController controller )
+	public static Value my_mask( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getMask() );
 	}
 
-	public static Value my_meat( RuntimeController controller )
+	public static Value my_meat( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getAvailableMeat() );
 	}
 
-	public static Value my_closet_meat( RuntimeController controller )
+	public static Value my_closet_meat( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getClosetMeat() );
 	}
 
-	public static Value my_storage_meat( RuntimeController controller )
+	public static Value my_storage_meat( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getStorageMeat() );
 	}
 
-	public static Value my_session_meat( RuntimeController controller )
+	public static Value my_session_meat( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getSessionMeat() );
 	}
 
-	public static Value my_adventures( RuntimeController controller )
+	public static Value my_adventures( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getAdventuresLeft() );
 	}
 
-	public static Value my_session_adv( RuntimeController controller )
+	public static Value my_session_adv( ScriptRuntime controller )
 	{
 		int adv = 0;
 		for ( AdventureResult result : KoLConstants.tally )
@@ -5808,7 +5808,7 @@ public abstract class RuntimeLibrary
 		return new Value( adv );
 	}
 
-	public static Value my_session_items( RuntimeController controller )
+	public static Value my_session_items( ScriptRuntime controller )
 	{
 		AggregateType type = new AggregateType( DataTypes.INT_TYPE, DataTypes.ITEM_TYPE );
 		MapValue value = new MapValue( type );
@@ -5822,7 +5822,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value my_session_items( RuntimeController controller, Value item ) {
+	public static Value my_session_items( ScriptRuntime controller, Value item ) {
 		for ( AdventureResult result : KoLConstants.tally ) {
 			if ( result.getItemId() == item.intValue() ) {
 				return new Value( result.getCount() );
@@ -5832,87 +5832,87 @@ public abstract class RuntimeLibrary
 		return new Value( 0 );
 	}
 
-	public static Value my_daycount( RuntimeController controller )
+	public static Value my_daycount( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getCurrentDays() );
 	}
 
-	public static Value my_turncount( RuntimeController controller )
+	public static Value my_turncount( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getCurrentRun() );
 	}
 
-	public static Value my_fullness( RuntimeController controller )
+	public static Value my_fullness( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getFullness() );
 	}
 
-	public static Value fullness_limit( RuntimeController controller )
+	public static Value fullness_limit( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getFullnessLimit() );
 	}
 
-	public static Value my_inebriety( RuntimeController controller )
+	public static Value my_inebriety( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getInebriety() );
 	}
 
-	public static Value inebriety_limit( RuntimeController controller )
+	public static Value inebriety_limit( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getInebrietyLimit() );
 	}
 
-	public static Value my_spleen_use( RuntimeController controller )
+	public static Value my_spleen_use( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getSpleenUse() );
 	}
 
-	public static Value spleen_limit( RuntimeController controller )
+	public static Value spleen_limit( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getSpleenLimit() );
 	}
 
-	public static Value can_eat( RuntimeController controller )
+	public static Value can_eat( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.canEat() );
 	}
 
-	public static Value can_drink( RuntimeController controller )
+	public static Value can_drink( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.canDrink() );
 	}
 
-	public static Value turns_played( RuntimeController controller )
+	public static Value turns_played( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getCurrentRun() );
 	}
 
-	public static Value total_turns_played( RuntimeController controller )
+	public static Value total_turns_played( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getTurnsPlayed() );
 	}
 
-	public static Value my_ascensions( RuntimeController controller )
+	public static Value my_ascensions( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getAscensions() );
 	}
 
-	public static Value can_interact( RuntimeController controller )
+	public static Value can_interact( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.canInteract() );
 	}
 
-	public static Value in_hardcore( RuntimeController controller )
+	public static Value in_hardcore( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.isHardcore() );
 	}
 
-	public static Value pvp_attacks_left( RuntimeController controller )
+	public static Value pvp_attacks_left( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getAttacksLeft() );
 	}
 
-	public static Value current_pvp_stances( RuntimeController controller )
+	public static Value current_pvp_stances( ScriptRuntime controller )
 	{
 		AggregateType type = new AggregateType( DataTypes.INT_TYPE, DataTypes.STRING_TYPE );
 		MapValue value = new MapValue( type );
@@ -5928,22 +5928,22 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_clan_id( RuntimeController controller )
+	public static Value get_clan_id( ScriptRuntime controller )
 	{
 		return new Value( ClanManager.getClanId() );
 	}
 
-	public static Value get_clan_name( RuntimeController controller )
+	public static Value get_clan_name( ScriptRuntime controller )
 	{
 		return new Value( ClanManager.getClanName( true ) );
 	}
 
-	public static Value limit_mode( RuntimeController controller )
+	public static Value limit_mode( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getLimitmode() );
 	}
 
-	public static Value get_florist_plants( RuntimeController controller )
+	public static Value get_florist_plants( ScriptRuntime controller )
 	{
 		AggregateType plantType = new AggregateType( DataTypes.STRING_TYPE, 3 );
 
@@ -5979,12 +5979,12 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value total_free_rests( RuntimeController controller )
+	public static Value total_free_rests( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.freeRestsAvailable() );
 	}
 
-	public static Value get_ignore_zone_warnings( RuntimeController controller )
+	public static Value get_ignore_zone_warnings( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.getIgnoreZoneWarnings() );
 	}
@@ -5992,7 +5992,7 @@ public abstract class RuntimeLibrary
 	// Basic skill and effect functions, including those used
 	// in custom combat consult scripts.
 
-	public static Value have_skill( RuntimeController controller, final Value arg )
+	public static Value have_skill( ScriptRuntime controller, final Value arg )
 	{
 		int skillId = (int) arg.intValue();
 		UseSkillRequest skill = UseSkillRequest.getUnmodifiedInstance( skillId );
@@ -6000,52 +6000,52 @@ public abstract class RuntimeLibrary
 						   KoLCharacter.hasSkill( skill, KoLConstants.availableCombatSkills ) );
 	}
 
-	public static Value mp_cost( RuntimeController controller, final Value skill )
+	public static Value mp_cost( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getMPConsumptionById( (int) skill.intValue() ) );
 	}
 
-	public static Value adv_cost( RuntimeController controller, final Value skill )
+	public static Value adv_cost( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getAdventureCost( (int) skill.intValue() ) );
 	}
 
-	public static Value soulsauce_cost( RuntimeController controller, final Value skill )
+	public static Value soulsauce_cost( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getSoulsauceCost( (int) skill.intValue() ) );
 	}
 
-	public static Value thunder_cost( RuntimeController controller, final Value skill )
+	public static Value thunder_cost( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getThunderCost( (int) skill.intValue() ) );
 	}
 
-	public static Value rain_cost( RuntimeController controller, final Value skill )
+	public static Value rain_cost( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getRainCost( (int) skill.intValue() ) );
 	}
 
-	public static Value lightning_cost( RuntimeController controller, final Value skill )
+	public static Value lightning_cost( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getLightningCost( (int) skill.intValue() ) );
 	}
 
-	public static Value fuel_cost( RuntimeController controller, final Value skill )
+	public static Value fuel_cost( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getFuelCost( (int) skill.intValue() ) );
 	}
 
-	public static Value hp_cost( RuntimeController controller, final Value skill )
+	public static Value hp_cost( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getHPCost( (int) skill.intValue() ) );
 	}
 
-	public static Value turns_per_cast( RuntimeController controller, final Value skill )
+	public static Value turns_per_cast( ScriptRuntime controller, final Value skill )
 	{
 		return new Value( SkillDatabase.getEffectDuration( (int) skill.intValue() ) );
 	}
 
-	public static Value have_effect( RuntimeController controller, final Value arg )
+	public static Value have_effect( ScriptRuntime controller, final Value arg )
 	{
 		if ( arg == DataTypes.EFFECT_INIT )
 		{
@@ -6056,7 +6056,7 @@ public abstract class RuntimeLibrary
 		return new Value( effect.getCount( KoLConstants.activeEffects ) );
 	}
 
-	public static Value my_effects( RuntimeController controller )
+	public static Value my_effects( ScriptRuntime controller )
 	{
 		AdventureResult[] effectsArray = new AdventureResult[ KoLConstants.activeEffects.size() ];
 		KoLConstants.activeEffects.toArray( effectsArray );
@@ -6081,7 +6081,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value use_skill( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value use_skill( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -6125,7 +6125,7 @@ public abstract class RuntimeLibrary
 		return UseSkillRequest.lastUpdate.equals( "" ) ? RuntimeLibrary.continueValue() : DataTypes.FALSE_VALUE;
 	}
 
-	public static Value use_skill( RuntimeController controller, final Value skill )
+	public static Value use_skill( ScriptRuntime controller, final Value skill )
 	{
 		int skillId = (int) skill.intValue();
 
@@ -6141,7 +6141,7 @@ public abstract class RuntimeLibrary
 		return new Value( UseSkillRequest.lastUpdate );
 	}
 
-	public static Value use_skill( RuntimeController controller, final Value arg1, final Value arg2, final Value target )
+	public static Value use_skill( ScriptRuntime controller, final Value arg1, final Value arg2, final Value target )
 	{
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
@@ -6185,17 +6185,17 @@ public abstract class RuntimeLibrary
 		return UseSkillRequest.lastUpdate.equals( "" ) ? RuntimeLibrary.continueValue() : DataTypes.FALSE_VALUE;
 	}
 
-	public static Value last_skill_message( RuntimeController controller )
+	public static Value last_skill_message( ScriptRuntime controller )
 	{
 		return new Value( UseSkillRequest.lastUpdate );
 	}
 
-	public static Value get_auto_attack( RuntimeController controller )
+	public static Value get_auto_attack( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getAutoAttackAction() );
 	}
 
-	public static Value set_auto_attack( RuntimeController controller, Value attackValue )
+	public static Value set_auto_attack( ScriptRuntime controller, Value attackValue )
 	{
 		Type type = attackValue.getType();
 		String arg =
@@ -6208,42 +6208,42 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value attack( RuntimeController controller )
+	public static Value attack( ScriptRuntime controller )
 	{
 		return RuntimeLibrary.visit_url( controller, "fight.php?action=attack" );
 	}
 
-	public static Value twiddle( RuntimeController controller )
+	public static Value twiddle( ScriptRuntime controller )
 	{
 		return RuntimeLibrary.visit_url( controller, "fight.php?action=twiddle" );
 	}
 
-	public static Value steal( RuntimeController controller )
+	public static Value steal( ScriptRuntime controller )
 	{
 		return RuntimeLibrary.visit_url( controller, "fight.php?action=steal" );
 	}
 
-	public static Value runaway( RuntimeController controller )
+	public static Value runaway( ScriptRuntime controller )
 	{
 		return RuntimeLibrary.visit_url( controller, "fight.php?action=runaway" );
 	}
 
-	public static Value throw_item( RuntimeController controller, final Value item )
+	public static Value throw_item( ScriptRuntime controller, final Value item )
 	{
 		return RuntimeLibrary.visit_url( controller, "fight.php?action=useitem&whichitem=" + (int) item.intValue() );
 	}
 
-	public static Value throw_items( RuntimeController controller, final Value item1, final Value item2 )
+	public static Value throw_items( ScriptRuntime controller, final Value item1, final Value item2 )
 	{
 		return RuntimeLibrary.visit_url( controller, "fight.php?action=useitem&whichitem=" + (int) item1.intValue() + "&whichitem2=" + (int) item2.intValue() );
 	}
 
-	public static Value run_choice( RuntimeController controller, final Value decision )
+	public static Value run_choice( ScriptRuntime controller, final Value decision )
 	{
 		return run_choice( controller, decision, DataTypes.TRUE_VALUE, DataTypes.STRING_INIT );
 	}
 
-	public static Value run_choice( RuntimeController controller, final Value decision, final Value extra )
+	public static Value run_choice( ScriptRuntime controller, final Value decision, final Value extra )
 	{
 		if ( extra.getType().equals( DataTypes.TYPE_BOOLEAN ) )
 		{
@@ -6255,7 +6255,7 @@ public abstract class RuntimeLibrary
 		return run_choice( controller, decision, DataTypes.TRUE_VALUE, extra );
 	}
 
-	public static Value run_choice( RuntimeController controller, final Value decision, final Value custom, final Value more )
+	public static Value run_choice( ScriptRuntime controller, final Value decision, final Value custom, final Value more )
 	{
 		int option = (int) decision.intValue();
 		boolean handleFights = custom.intValue() != 0;
@@ -6323,22 +6323,22 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.BUFFER_TYPE, "", new StringBuffer( response == null ? "" : response ) );
 	}
 
-	public static Value last_choice( RuntimeController controller )
+	public static Value last_choice( ScriptRuntime controller )
 	{
 		return DataTypes.makeIntValue( ChoiceManager.lastChoice );
 	}
 
-	public static Value last_decision( RuntimeController controller )
+	public static Value last_decision( ScriptRuntime controller )
 	{
 		return DataTypes.makeIntValue( ChoiceManager.lastDecision );
 	}
 
-	public static Value available_choice_options( RuntimeController controller )
+	public static Value available_choice_options( ScriptRuntime controller )
 	{
 		return RuntimeLibrary.available_choice_options( false );
 	}
 
-	public static Value available_choice_options( RuntimeController controller, Value spoilers )
+	public static Value available_choice_options( ScriptRuntime controller, Value spoilers )
 	{
 		return RuntimeLibrary.available_choice_options( spoilers.intValue() == 1 );
 	}
@@ -6364,7 +6364,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value available_choice_select_inputs( RuntimeController controller, Value decision )
+	public static Value available_choice_select_inputs( ScriptRuntime controller, Value decision )
 	{
 		MapValue value = new MapValue( RuntimeLibrary.SelectMapType );
 		String responseText = ChoiceManager.lastResponseText;
@@ -6390,7 +6390,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value available_choice_text_inputs( RuntimeController controller, Value decision )
+	public static Value available_choice_text_inputs( ScriptRuntime controller, Value decision )
 	{
 		MapValue value = new MapValue( DataTypes.STRING_TO_STRING_TYPE );
 		String responseText = ChoiceManager.lastResponseText;
@@ -6409,27 +6409,27 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value in_multi_fight( RuntimeController controller )
+	public static Value in_multi_fight( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( FightRequest.inMultiFight );
 	}
 
-	public static Value choice_follows_fight( RuntimeController controller )
+	public static Value choice_follows_fight( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( FightRequest.choiceFollowsFight );
 	}
 
-	public static Value fight_follows_choice( RuntimeController controller )
+	public static Value fight_follows_choice( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( FightRequest.fightFollowsChoice );
 	}
 
-	public static Value handling_choice( RuntimeController controller )
+	public static Value handling_choice( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( ChoiceManager.handlingChoice );
 	}
 
-	public static Value run_combat( RuntimeController controller )
+	public static Value run_combat( ScriptRuntime controller )
 	{
 		RelayRequest relayRequest = controller.getRelayRequest();
 
@@ -6441,7 +6441,7 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.BUFFER_TYPE, "", new StringBuffer( FightRequest.lastDecoratedResponseText ) );
 	}
 
-	public static Value run_combat( RuntimeController controller, Value filterFunction )
+	public static Value run_combat( ScriptRuntime controller, Value filterFunction )
 	{
 		if ( FightRequest.currentRound == 0 && !FightRequest.inMultiFight )
 		{
@@ -6451,9 +6451,9 @@ public abstract class RuntimeLibrary
 		try
 		{
 			String filter = filterFunction.toString();
-			if (controller instanceof Interpreter)
+			if (controller instanceof AshRuntime)
 			{
-				Macrofier.setMacroOverride( filter, (Interpreter) controller );
+				Macrofier.setMacroOverride( filter, (AshRuntime) controller );
 			}
 			RequestThread.postRequest( FightRequest.INSTANCE );
 		}
@@ -6462,7 +6462,7 @@ public abstract class RuntimeLibrary
 			Macrofier.resetMacroOverride();
 		}
 
-		if (controller.getState() == RuntimeController.State.EXIT)
+		if (controller.getState() == ScriptRuntime.State.EXIT)
 		{
 			return DataTypes.VOID_VALUE;
 		}
@@ -6472,7 +6472,7 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.BUFFER_TYPE, "", new StringBuffer( response == null ? "" : response ) );
 	}
 
-	public static Value run_turn( RuntimeController controller )
+	public static Value run_turn( ScriptRuntime controller )
 	{
 		if ( FightRequest.currentRound > 0 || FightRequest.inMultiFight )
 		{
@@ -6486,7 +6486,7 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.BUFFER_TYPE, "" );
 	}
 
-	public static Value stun_skill( RuntimeController controller )
+	public static Value stun_skill( ScriptRuntime controller )
 	{
 		String stunSkill = KoLCharacter.getClassStun();
 		int skill = -1;
@@ -6499,12 +6499,12 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeSkillValue( skill, true );
 	}
 
-	public static Value reverse_numberology( RuntimeController controller )
+	public static Value reverse_numberology( ScriptRuntime controller )
 	{
 		return reverse_numberology( controller, new Value( 0 ), new Value( 0 ) );
 	}
 
-	public static Value reverse_numberology( RuntimeController controller, final Value advDelta, final Value spleenDelta )
+	public static Value reverse_numberology( ScriptRuntime controller, final Value advDelta, final Value spleenDelta )
 	{
 		MapValue value = new MapValue( NumberologyType );
 
@@ -6519,12 +6519,12 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value numberology_prize( RuntimeController controller, final Value num )
+	public static Value numberology_prize( ScriptRuntime controller, final Value num )
 	{
 		return DataTypes.makeStringValue( NumberologyManager.numberologyPrize( (int) num.intValue() ) );
 	}
 
-	public static Value every_card_name( RuntimeController controller, final Value name )
+	public static Value every_card_name( ScriptRuntime controller, final Value name )
 	{
 		// Use logic from CLI "play" command
 		List<String> matchingNames = DeckOfEveryCardRequest.getMatchingNames( name.toString() );
@@ -6540,7 +6540,7 @@ public abstract class RuntimeLibrary
 
 	// Equipment functions.
 
-	public static Value can_equip( RuntimeController controller, final Value item )
+	public static Value can_equip( ScriptRuntime controller, final Value item )
 	{
 		int itemId = (int) item.intValue();
 		switch ( ItemDatabase.getConsumptionType( itemId ) )
@@ -6561,20 +6561,20 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( EquipmentManager.canEquip( ItemDatabase.getItemName( itemId ) ) );
 	}
 
-	public static Value can_equip( RuntimeController controller, final Value familiar, final Value item )
+	public static Value can_equip( ScriptRuntime controller, final Value familiar, final Value item )
 	{
 		AdventureResult it = ItemPool.get( (int) item.intValue() );
 		FamiliarData fam = new FamiliarData( (int) familiar.intValue() );
 		return fam == null ? DataTypes.FALSE_VALUE : DataTypes.makeBooleanValue( fam.canEquip( it ) );
 	}
 
-	public static Value equip( RuntimeController controller, final Value item )
+	public static Value equip( ScriptRuntime controller, final Value item )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "equip", "\u00B6" + (int) item.intValue() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value equip( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value equip( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		boolean slotThenItem = arg1.getType().equals( DataTypes.SLOT_TYPE );
 
@@ -6593,23 +6593,23 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value equipped_item( RuntimeController controller, final Value slot )
+	public static Value equipped_item( ScriptRuntime controller, final Value slot )
 	{
 		return DataTypes.makeItemValue( EquipmentManager.getEquipment( (int) slot.intValue() ).getName() );
 	}
 
-	public static Value have_equipped( RuntimeController controller, final Value item )
+	public static Value have_equipped( ScriptRuntime controller, final Value item )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.hasEquipped( ItemPool.get( (int) item.intValue() ) ) );
 	}
 
-	public static Value outfit( RuntimeController controller, final Value outfit )
+	public static Value outfit( ScriptRuntime controller, final Value outfit )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "outfit", outfit.toString() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value have_outfit( RuntimeController controller, final Value outfit )
+	public static Value have_outfit( ScriptRuntime controller, final Value outfit )
 	{
 		SpecialOutfit so = EquipmentManager.getMatchingOutfit( outfit.toString() );
 
@@ -6622,7 +6622,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( id < 0 || EquipmentManager.hasOutfit( id ) );
 	}
 
-	public static Value is_wearing_outfit( RuntimeController controller, final Value outfit )
+	public static Value is_wearing_outfit( ScriptRuntime controller, final Value outfit )
 	{
 		SpecialOutfit so = EquipmentManager.getMatchingOutfit( outfit.toString() );
 
@@ -6634,7 +6634,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( EquipmentManager.isWearingOutfit( so ) );
 	}
 
-	public static Value outfit_pieces( RuntimeController controller, final Value outfit )
+	public static Value outfit_pieces( ScriptRuntime controller, final Value outfit )
 	{
 		SpecialOutfit so = EquipmentManager.getMatchingOutfit( outfit.toString() );
 		if ( so == null )
@@ -6656,7 +6656,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value outfit_tattoo( RuntimeController controller, final Value outfit )
+	public static Value outfit_tattoo( ScriptRuntime controller, final Value outfit )
 	{
 		SpecialOutfit so = EquipmentManager.getMatchingOutfit( outfit.toString() );
 
@@ -6668,22 +6668,22 @@ public abstract class RuntimeLibrary
 		return new Value( so.getImage() );
 	}
 	
-	public static Value get_outfits( RuntimeController controller )
+	public static Value get_outfits( ScriptRuntime controller )
 	{
 		return RuntimeLibrary.outfitListToValue( controller, EquipmentManager.getOutfits(), false );
 	}
 
-	public static Value get_custom_outfits( RuntimeController controller )
+	public static Value get_custom_outfits( ScriptRuntime controller )
 	{
 		return RuntimeLibrary.outfitListToValue( controller, EquipmentManager.getCustomOutfits(), false );
 	}
 
-	public static Value all_normal_outfits( RuntimeController controller )
+	public static Value all_normal_outfits( ScriptRuntime controller )
 	{
 		return RuntimeLibrary.outfitListToValue( controller, EquipmentDatabase.normalOutfits.toList(), true );
 	}
 
-	private static Value outfitListToValue( RuntimeController controller, List<SpecialOutfit> outfits, boolean map )
+	private static Value outfitListToValue( ScriptRuntime controller, List<SpecialOutfit> outfits, boolean map )
 	{
 		AggregateValue value =
 			map ?
@@ -6702,56 +6702,56 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value weapon_hands( RuntimeController controller, final Value item )
+	public static Value weapon_hands( ScriptRuntime controller, final Value item )
 	{
 		return new Value( EquipmentDatabase.getHands( (int) item.intValue() ) );
 	}
 
-	public static Value item_type( RuntimeController controller, final Value item )
+	public static Value item_type( ScriptRuntime controller, final Value item )
 	{
 		String type = EquipmentDatabase.getItemType( (int) item.intValue() );
 		return new Value( type );
 	}
 
-	public static Value weapon_type( RuntimeController controller, final Value item )
+	public static Value weapon_type( ScriptRuntime controller, final Value item )
 	{
 		Stat stat = EquipmentDatabase.getWeaponStat( (int) item.intValue() );
 		return stat == Stat.MUSCLE ? DataTypes.MUSCLE_VALUE : stat == Stat.MYSTICALITY ? DataTypes.MYSTICALITY_VALUE :
 			stat == Stat.MOXIE ? DataTypes.MOXIE_VALUE : DataTypes.STAT_INIT;
 	}
 
-	public static Value get_power( RuntimeController controller, final Value item )
+	public static Value get_power( ScriptRuntime controller, final Value item )
 	{
 		return new Value( EquipmentDatabase.getPower( (int) item.intValue() ) );
 	}
 
-	public static Value my_familiar( RuntimeController controller )
+	public static Value my_familiar( ScriptRuntime controller )
 	{
 		return DataTypes.makeFamiliarValue( KoLCharacter.getFamiliar().getId(), true );
 	}
 
-	public static Value my_effective_familiar( RuntimeController controller )
+	public static Value my_effective_familiar( ScriptRuntime controller )
 	{
 		return DataTypes.makeFamiliarValue( KoLCharacter.getEffectiveFamiliar().getId(), true );
 	}
 
-	public static Value my_enthroned_familiar( RuntimeController controller )
+	public static Value my_enthroned_familiar( ScriptRuntime controller )
 	{
 		return DataTypes.makeFamiliarValue( KoLCharacter.getEnthroned().getId(), true );
 	}
 
-	public static Value my_bjorned_familiar( RuntimeController controller )
+	public static Value my_bjorned_familiar( ScriptRuntime controller )
 	{
 		return DataTypes.makeFamiliarValue( KoLCharacter.getBjorned().getId(), true );
 	}
 
-	public static Value my_poke_fam( RuntimeController controller, final Value arg )
+	public static Value my_poke_fam( ScriptRuntime controller, final Value arg )
 	{
 		int slot = (int) arg.intValue();
 		return DataTypes.makeFamiliarValue( KoLCharacter.getPokeFam( slot ).getId(), true );
 	}
 
-	public static Value have_familiar( RuntimeController controller, final Value familiar )
+	public static Value have_familiar( ScriptRuntime controller, final Value familiar )
 	{
 		int familiarId = (int) familiar.intValue();
 		return  familiarId == -1 ?
@@ -6759,59 +6759,59 @@ public abstract class RuntimeLibrary
 			DataTypes.makeBooleanValue( KoLCharacter.findFamiliar( familiarId ) != null );
 	}
 
-	public static Value use_familiar( RuntimeController controller, final Value familiar )
+	public static Value use_familiar( ScriptRuntime controller, final Value familiar )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "familiar", familiar.toString() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value have_servant( RuntimeController controller, final Value servant )
+	public static Value have_servant( ScriptRuntime controller, final Value servant )
 	{
 		return DataTypes.makeBooleanValue( EdServantData.findEdServant( servant.toString() ) != null );
 	}
 
-	public static Value use_servant( RuntimeController controller, final Value servant )
+	public static Value use_servant( ScriptRuntime controller, final Value servant )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "servant", servant.toString() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value enthrone_familiar( RuntimeController controller, final Value familiar )
+	public static Value enthrone_familiar( ScriptRuntime controller, final Value familiar )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "enthrone", familiar.toString() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value bjornify_familiar( RuntimeController controller, final Value familiar )
+	public static Value bjornify_familiar( ScriptRuntime controller, final Value familiar )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "bjornify", familiar.toString() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value familiar_equipment( RuntimeController controller, final Value familiar )
+	public static Value familiar_equipment( ScriptRuntime controller, final Value familiar )
 	{
 		return DataTypes.makeItemValue( FamiliarDatabase.getFamiliarItemId( (int) familiar.intValue() ), true );
 	}
 
-	public static Value familiar_equipped_equipment( RuntimeController controller, final Value familiar )
+	public static Value familiar_equipped_equipment( ScriptRuntime controller, final Value familiar )
 	{
 		FamiliarData fam = KoLCharacter.findFamiliar( (int) familiar.intValue() );
 		AdventureResult item = fam == null ? EquipmentRequest.UNEQUIP : fam.getItem();
 		return item == EquipmentRequest.UNEQUIP ? DataTypes.ITEM_INIT : DataTypes.makeItemValue( item.getItemId(), true );
 	}
 
-	public static Value familiar_weight( RuntimeController controller, final Value familiar )
+	public static Value familiar_weight( ScriptRuntime controller, final Value familiar )
 	{
 		FamiliarData fam = KoLCharacter.findFamiliar( (int) familiar.intValue() );
 		return fam == null ? DataTypes.ZERO_VALUE : new Value( fam.getWeight() );
 	}
 
-	public static Value is_familiar_equipment_locked( RuntimeController controller )
+	public static Value is_familiar_equipment_locked( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( EquipmentManager.familiarItemLocked() );
 	}
 
-	public static Value favorite_familiars( RuntimeController controller )
+	public static Value favorite_familiars( ScriptRuntime controller )
 	{
 		AggregateType type = new AggregateType( DataTypes.BOOLEAN_TYPE, DataTypes.FAMILIAR_TYPE );
 		MapValue value = new MapValue( type );
@@ -6827,7 +6827,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value lock_familiar_equipment( RuntimeController controller, Value lock )
+	public static Value lock_familiar_equipment( ScriptRuntime controller, Value lock )
 	{
 		if ( ( lock.intValue() == 1 ) != EquipmentManager.familiarItemLocked() )
 		{
@@ -6836,29 +6836,29 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value equip_all_familiars( RuntimeController controller )
+	public static Value equip_all_familiars( ScriptRuntime controller )
 	{
 		FamiliarManager.equipAllFamiliars();
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value minstrel_level( RuntimeController controller )
+	public static Value minstrel_level( ScriptRuntime controller )
 	{
 		return DataTypes.makeIntValue( KoLCharacter.getMinstrelLevel() );
 	}
 
-	public static Value minstrel_instrument( RuntimeController controller )
+	public static Value minstrel_instrument( ScriptRuntime controller )
 	{
 		AdventureResult item = KoLCharacter.getCurrentInstrument();
 		return item == null ? DataTypes.ITEM_INIT : DataTypes.makeItemValue( item.getItemId(), true );
 	}
 
-	public static Value minstrel_quest( RuntimeController controller )
+	public static Value minstrel_quest( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.minstrelAttention );
 	}
 
-	public static Value my_companion( RuntimeController controller )
+	public static Value my_companion( ScriptRuntime controller )
 	{
 		if ( KoLCharacter.getCompanion() == null )
 		{
@@ -6867,17 +6867,17 @@ public abstract class RuntimeLibrary
 		return new Value( KoLCharacter.getCompanion().toString() );
 	}
 
-	public static Value my_thrall( RuntimeController controller )
+	public static Value my_thrall( ScriptRuntime controller )
 	{
 		return DataTypes.makeThrallValue( KoLCharacter.currentPastaThrall(), true );
 	}
 
-	public static Value my_servant( RuntimeController controller )
+	public static Value my_servant( ScriptRuntime controller )
 	{
 		return DataTypes.makeServantValue( EdServantData.currentServant(), true );
 	}
 
-	public static Value my_vykea_companion( RuntimeController controller )
+	public static Value my_vykea_companion( ScriptRuntime controller )
 	{
 		return DataTypes.makeVykeaValue( VYKEACompanionData.currentCompanion(), true );
 	}
@@ -6885,70 +6885,70 @@ public abstract class RuntimeLibrary
 	// Random other functions related to current in-game
 	// state, not directly tied to the character.
 
-	public static Value council( RuntimeController controller )
+	public static Value council( ScriptRuntime controller )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "council", "" );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value current_mcd( RuntimeController controller )
+	public static Value current_mcd( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getMindControlLevel() );
 	}
 
-	public static Value change_mcd( RuntimeController controller, final Value level )
+	public static Value change_mcd( ScriptRuntime controller, final Value level )
 	{
 		KoLmafiaCLI.DEFAULT_SHELL.executeCommand( "mcd", level.toString() );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value current_rad_sickness( RuntimeController controller )
+	public static Value current_rad_sickness( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getRadSickness() );
 	}
 
-	public static Value have_chef( RuntimeController controller )
+	public static Value have_chef( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.hasChef() );
 	}
 
-	public static Value have_bartender( RuntimeController controller )
+	public static Value have_bartender( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.hasBartender() );
 	}
 
-	public static Value have_shop( RuntimeController controller )
+	public static Value have_shop( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.hasStore() );
 	}
 
-	public static Value have_display( RuntimeController controller )
+	public static Value have_display( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.hasDisplayCase() );
 	}
 
-	public static Value hippy_stone_broken( RuntimeController controller )
+	public static Value hippy_stone_broken( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.getHippyStoneBroken() );
 	}
 
-	public static Value get_counters( RuntimeController controller, final Value label, final Value min, final Value max )
+	public static Value get_counters( ScriptRuntime controller, final Value label, final Value min, final Value max )
 	{
 		return new Value( TurnCounter.getCounters( label.toString(), (int) min.intValue(), (int) max.intValue() ) );
 	}
 
-	public static Value stop_counter( RuntimeController controller, final Value label )
+	public static Value stop_counter( ScriptRuntime controller, final Value label )
 	{
 		TurnCounter.stopCounting( label.toString() );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value eudora ( RuntimeController controller )
+	public static Value eudora ( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getEudora() );
 	}
 
-	public static Value eudora( RuntimeController controller, final Value newEudora )
+	public static Value eudora( ScriptRuntime controller, final Value newEudora )
 	{
 		String correspondent = newEudora.toString();
 		String requestString = "account.php?am=1&action=whichpenpal&ajax=1&pwd=" +
@@ -7003,27 +7003,27 @@ public abstract class RuntimeLibrary
 
 	// String parsing functions.
 
-	public static Value is_integer( RuntimeController controller, final Value string )
+	public static Value is_integer( ScriptRuntime controller, final Value string )
 	{
 		return DataTypes.makeBooleanValue( StringUtilities.isNumeric( string.toString() ) );
 	}
 
-	public static Value contains_text( RuntimeController controller, final Value source, final Value search )
+	public static Value contains_text( ScriptRuntime controller, final Value source, final Value search )
 	{
 		return DataTypes.makeBooleanValue( source.toString().contains( search.toString() ) );
 	}
 
-	public static Value starts_with( RuntimeController controller, final Value source, final Value prefix )
+	public static Value starts_with( ScriptRuntime controller, final Value source, final Value prefix )
 	{
 		return DataTypes.makeBooleanValue( source.toString().startsWith( prefix.toString() ) );
 	}
 
-	public static Value ends_with( RuntimeController controller, final Value source, final Value suffix )
+	public static Value ends_with( ScriptRuntime controller, final Value source, final Value suffix )
 	{
 		return DataTypes.makeBooleanValue( source.toString().endsWith( suffix.toString() ) );
 	}
 
-	public static Value extract_meat( RuntimeController controller, final Value string )
+	public static Value extract_meat( ScriptRuntime controller, final Value string )
 	{
 		ArrayList<AdventureResult> data = new ArrayList<AdventureResult>();
 		ResultProcessor.processResults( false,
@@ -7041,7 +7041,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.ZERO_VALUE;
 	}
 
-	public static Value extract_items( RuntimeController controller, final Value string )
+	public static Value extract_items( ScriptRuntime controller, final Value string )
 	{
 		ArrayList<AdventureResult> data = new ArrayList<AdventureResult>();
 		ResultProcessor.processResults( false,
@@ -7062,12 +7062,12 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value length( RuntimeController controller, final Value string )
+	public static Value length( ScriptRuntime controller, final Value string )
 	{
 		return new Value( string.toString().length() );
 	}
 
-	public static Value char_at( RuntimeController controller, final Value source, final Value index )
+	public static Value char_at( ScriptRuntime controller, final Value source, final Value index )
 	{
 		String string = source.toString();
 		int offset = (int) index.intValue();
@@ -7078,14 +7078,14 @@ public abstract class RuntimeLibrary
 		return new Value( Character.toString( string.charAt( offset ) ) );
 	}
 
-	public static Value index_of( RuntimeController controller, final Value source, final Value search )
+	public static Value index_of( ScriptRuntime controller, final Value source, final Value search )
 	{
 		String string = source.toString();
 		String substring = search.toString();
 		return new Value( string.indexOf( substring ) );
 	}
 
-	public static Value index_of( RuntimeController controller, final Value source, final Value search,
+	public static Value index_of( ScriptRuntime controller, final Value source, final Value search,
 		final Value start )
 	{
 		String string = source.toString();
@@ -7098,14 +7098,14 @@ public abstract class RuntimeLibrary
 		return new Value( string.indexOf( substring, begin ) );
 	}
 
-	public static Value last_index_of( RuntimeController controller, final Value source, final Value search )
+	public static Value last_index_of( ScriptRuntime controller, final Value source, final Value search )
 	{
 		String string = source.toString();
 		String substring = search.toString();
 		return new Value( string.lastIndexOf( substring ) );
 	}
 
-	public static Value last_index_of( RuntimeController controller, final Value source, final Value search,
+	public static Value last_index_of( ScriptRuntime controller, final Value source, final Value search,
 		final Value start )
 	{
 		String string = source.toString();
@@ -7118,7 +7118,7 @@ public abstract class RuntimeLibrary
 		return new Value( string.lastIndexOf( substring, begin ) );
 	}
 
-	public static Value substring( RuntimeController controller, final Value source, final Value start )
+	public static Value substring( ScriptRuntime controller, final Value source, final Value start )
 	{
 		String string = source.toString();
 		int begin = (int) start.intValue();
@@ -7129,7 +7129,7 @@ public abstract class RuntimeLibrary
 		return new Value( string.substring( begin ) );
 	}
 
-	public static Value substring( RuntimeController controller, final Value source, final Value start,
+	public static Value substring( ScriptRuntime controller, final Value source, final Value start,
 		final Value finish )
 	{
 		String string = source.toString();
@@ -7150,29 +7150,29 @@ public abstract class RuntimeLibrary
 		return new Value( string.substring( begin, end ) );
 	}
 
-	public static Value to_upper_case( RuntimeController controller, final Value string )
+	public static Value to_upper_case( ScriptRuntime controller, final Value string )
 	{
 		return new Value( string.toString().toUpperCase() );
 	}
 
-	public static Value to_lower_case( RuntimeController controller, final Value string )
+	public static Value to_lower_case( ScriptRuntime controller, final Value string )
 	{
 		return new Value( string.toString().toLowerCase() );
 	}
 
-	public static Value leetify( RuntimeController controller, final Value string )
+	public static Value leetify( ScriptRuntime controller, final Value string )
 	{
 		return new Value( StringUtilities.leetify( string.toString() ) );
 	}
 
-	public static Value append( RuntimeController controller, final Value buffer, final Value s )
+	public static Value append( ScriptRuntime controller, final Value buffer, final Value s )
 	{
 		StringBuffer current = (StringBuffer) buffer.rawValue();
 		current.append( s.toString() );
 		return buffer;
 	}
 
-	public static Value insert( RuntimeController controller, final Value buffer, final Value index, final Value s )
+	public static Value insert( ScriptRuntime controller, final Value buffer, final Value index, final Value s )
 	{
 		StringBuffer current = (StringBuffer) buffer.rawValue();
 		int offset = (int) index.intValue();
@@ -7184,7 +7184,7 @@ public abstract class RuntimeLibrary
 		return buffer;
 	}
 
-	public static Value replace( RuntimeController controller, final Value buffer, final Value start, final Value finish,
+	public static Value replace( ScriptRuntime controller, final Value buffer, final Value start, final Value finish,
 		final Value s )
 	{
 		StringBuffer current = (StringBuffer) buffer.rawValue();
@@ -7206,7 +7206,7 @@ public abstract class RuntimeLibrary
 		return buffer;
 	}
 
-	public static Value delete( RuntimeController controller, final Value buffer, final Value start, final Value finish )
+	public static Value delete( ScriptRuntime controller, final Value buffer, final Value start, final Value finish )
 	{
 		StringBuffer current = (StringBuffer) buffer.rawValue();
 		int begin = (int) start.intValue();
@@ -7227,7 +7227,7 @@ public abstract class RuntimeLibrary
 		return buffer;
 	}
 
-	public static Value set_length( RuntimeController controller, final Value buffer, final Value i )
+	public static Value set_length( ScriptRuntime controller, final Value buffer, final Value i )
 	{
 		StringBuffer current = (StringBuffer) buffer.rawValue();
 		int length = (int) i.intValue();
@@ -7239,7 +7239,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value append_tail( RuntimeController controller, final Value matcher, final Value buffer )
+	public static Value append_tail( ScriptRuntime controller, final Value matcher, final Value buffer )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		StringBuffer current = (StringBuffer) buffer.rawValue();
@@ -7247,7 +7247,7 @@ public abstract class RuntimeLibrary
 		return buffer;
 	}
 
-	public static Value append_replacement( RuntimeController controller, final Value matcher, final Value buffer, final Value replacement )
+	public static Value append_replacement( ScriptRuntime controller, final Value matcher, final Value buffer, final Value replacement )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		StringBuffer current = (StringBuffer) buffer.rawValue();
@@ -7255,7 +7255,7 @@ public abstract class RuntimeLibrary
 		return buffer;
 	}
 
-	public static Value create_matcher( RuntimeController controller, final Value patternValue, final Value stringValue )
+	public static Value create_matcher( ScriptRuntime controller, final Value patternValue, final Value stringValue )
 	{
 		String pattern = patternValue.toString();
 		String string = stringValue.toString();
@@ -7276,13 +7276,13 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.MATCHER_TYPE, pattern, p.matcher( string ) );
 	}
 
-	public static Value find( RuntimeController controller, final Value matcher )
+	public static Value find( ScriptRuntime controller, final Value matcher )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		return DataTypes.makeBooleanValue( m.find() );
 	}
 
-	public static Value start( RuntimeController controller, final Value matcher )
+	public static Value start( ScriptRuntime controller, final Value matcher )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		try
@@ -7295,7 +7295,7 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value start( RuntimeController controller, final Value matcher, final Value group )
+	public static Value start( ScriptRuntime controller, final Value matcher, final Value group )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		int index = (int) group.intValue();
@@ -7313,7 +7313,7 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value end( RuntimeController controller, final Value matcher )
+	public static Value end( ScriptRuntime controller, final Value matcher )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		try
@@ -7326,7 +7326,7 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value end( RuntimeController controller, final Value matcher, final Value group )
+	public static Value end( ScriptRuntime controller, final Value matcher, final Value group )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		int index = (int) group.intValue();
@@ -7344,7 +7344,7 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value group( RuntimeController controller, final Value matcher )
+	public static Value group( ScriptRuntime controller, final Value matcher )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		try
@@ -7357,7 +7357,7 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value group( RuntimeController controller, final Value matcher, final Value group )
+	public static Value group( ScriptRuntime controller, final Value matcher, final Value group )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		Type type = group.getType();
@@ -7394,14 +7394,14 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value group_count( RuntimeController controller, final Value matcher )
+	public static Value group_count( ScriptRuntime controller, final Value matcher )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		return new Value( m.groupCount() );
 	}
 
 	static final Pattern GROUP_NAME_PATTERN = Pattern.compile( "\\(\\?<([a-zA-Z][a-zA-Z0-9]*)>" );
-	public static Value group_names( RuntimeController controller, final Value matcher )
+	public static Value group_names( ScriptRuntime controller, final Value matcher )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		Pattern p = m.pattern();
@@ -7418,33 +7418,33 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value replace_first( RuntimeController controller, final Value matcher, final Value replacement )
+	public static Value replace_first( ScriptRuntime controller, final Value matcher, final Value replacement )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		return new Value( m.replaceFirst( replacement.toString() ) );
 	}
 
-	public static Value replace_all( RuntimeController controller, final Value matcher, final Value replacement )
+	public static Value replace_all( ScriptRuntime controller, final Value matcher, final Value replacement )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		return new Value( m.replaceAll( replacement.toString() ) );
 	}
 
-	public static Value reset( RuntimeController controller, final Value matcher )
+	public static Value reset( ScriptRuntime controller, final Value matcher )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		m.reset();
 		return matcher;
 	}
 
-	public static Value reset( RuntimeController controller, final Value matcher, final Value input )
+	public static Value reset( ScriptRuntime controller, final Value matcher, final Value input )
 	{
 		Matcher m = (Matcher) matcher.rawValue();
 		m.reset( input.toString() );
 		return matcher;
 	}
 
-	public static Value replace_string( RuntimeController controller, final Value source,
+	public static Value replace_string( ScriptRuntime controller, final Value source,
 					    final Value searchValue,
 					    final Value replaceValue )
 	{
@@ -7469,7 +7469,7 @@ public abstract class RuntimeLibrary
 		return returnValue;
 	}
 
-	public static Value split_string( RuntimeController controller, final Value string )
+	public static Value split_string( ScriptRuntime controller, final Value string )
 	{
 		String[] pieces = string.toString().split( KoLConstants.LINE_BREAK );
 
@@ -7484,7 +7484,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value split_string( RuntimeController controller, final Value string, final Value regex )
+	public static Value split_string( ScriptRuntime controller, final Value string, final Value regex )
 	{
 		Pattern p;
 		if ( regex.rawValue() instanceof Pattern )
@@ -7519,7 +7519,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value group_string( RuntimeController controller, final Value string, final Value regex )
+	public static Value group_string( ScriptRuntime controller, final Value string, final Value regex )
 	{
 		Pattern p;
 		if ( regex.rawValue() instanceof Pattern )
@@ -7584,7 +7584,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value expression_eval( RuntimeController controller, final Value expr )
+	public static Value expression_eval( ScriptRuntime controller, final Value expr )
 	{
 		Expression e;
 		if ( expr.content instanceof Expression )
@@ -7608,7 +7608,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.eval( controller, e );
 	}
 
-	public static Value modifier_eval( RuntimeController controller, final Value expr )
+	public static Value modifier_eval( ScriptRuntime controller, final Value expr )
 	{
 		ModifierExpression e;
 		if ( expr.content instanceof ModifierExpression )
@@ -7631,7 +7631,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.eval( controller, e );
 	}
 
-	private static Value eval( RuntimeController controller, final Expression expr )
+	private static Value eval( ScriptRuntime controller, final Expression expr )
 	{
 		try
 		{
@@ -7643,12 +7643,12 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value maximize( RuntimeController controller, final Value maximizerStringValue, final Value isSpeculateOnlyValue )
+	public static Value maximize( ScriptRuntime controller, final Value maximizerStringValue, final Value isSpeculateOnlyValue )
 	{
 		return maximize( controller, maximizerStringValue, DataTypes.ZERO_VALUE, DataTypes.ZERO_VALUE, isSpeculateOnlyValue );
 	}
 
-	public static Value maximize( RuntimeController controller, final Value maximizerStringValue, final Value maxPriceValue, final Value priceLevelValue, final Value isSpeculateOnlyValue )
+	public static Value maximize( ScriptRuntime controller, final Value maximizerStringValue, final Value maxPriceValue, final Value priceLevelValue, final Value isSpeculateOnlyValue )
 	{
 		String maximizerString = maximizerStringValue.toString();
 		int maxPrice = (int) maxPriceValue.intValue();
@@ -7658,7 +7658,7 @@ public abstract class RuntimeLibrary
 		return new Value( Maximizer.maximize( maximizerString, maxPrice, priceLevel, isSpeculateOnly ) );
 	}
 	
-	public static Value maximize( RuntimeController controller, final Value maximizerStringValue, final Value maxPriceValue,
+	public static Value maximize( ScriptRuntime controller, final Value maximizerStringValue, final Value maxPriceValue,
 		final Value priceLevelValue, final Value isSpeculateOnlyValue, final Value showEquipment )
 	{
 		String maximizerString = maximizerStringValue.toString();
@@ -7716,7 +7716,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value monster_eval( RuntimeController controller, final Value expr )
+	public static Value monster_eval( ScriptRuntime controller, final Value expr )
 	{
 		MonsterExpression e;
 		if ( expr.content instanceof MonsterExpression )
@@ -7739,14 +7739,14 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.eval( controller, e );
 	}
 
-	public static Value is_online( RuntimeController controller, final Value arg )
+	public static Value is_online( ScriptRuntime controller, final Value arg )
 	{
 		String name = arg.toString();
 		return DataTypes.makeBooleanValue( KoLmafia.isPlayerOnline( name ) );
 	}
 
 	static final Pattern COUNT_PATTERN = Pattern.compile( "You have (\\d+) " );
-	public static Value slash_count( RuntimeController controller, final Value arg )
+	public static Value slash_count( ScriptRuntime controller, final Value arg )
 	{
 		String itemName = ItemDatabase.getItemName( (int)arg.intValue() );
 		InternalChatRequest request = new InternalChatRequest( "/count " + itemName );
@@ -7755,7 +7755,7 @@ public abstract class RuntimeLibrary
 		return new Value( m.find() ? StringUtilities.parseInt( m.group( 1 ) ) : 0 );
 	}
 
-	public static Value chat_macro( RuntimeController controller, final Value macroValue )
+	public static Value chat_macro( ScriptRuntime controller, final Value macroValue )
 	{
 		String macro = macroValue.toString().trim();
 
@@ -7764,7 +7764,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value chat_clan( RuntimeController controller, final Value messageValue )
+	public static Value chat_clan( ScriptRuntime controller, final Value messageValue )
 	{
 		String channel = "/clan";
 		String message = messageValue.toString().trim();
@@ -7773,7 +7773,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value chat_clan( RuntimeController controller, final Value messageValue, final Value recipientValue )
+	public static Value chat_clan( ScriptRuntime controller, final Value messageValue, final Value recipientValue )
 	{
 		String channel = "/" + recipientValue.toString().trim();
 		String message = messageValue.toString().trim();
@@ -7782,7 +7782,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value chat_private( RuntimeController controller, final Value recipientValue, final Value messageValue )
+	public static Value chat_private( ScriptRuntime controller, final Value recipientValue, final Value messageValue )
 	{
 		String recipient = recipientValue.toString();
 
@@ -7798,7 +7798,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value chat_notify( RuntimeController controller, final Value messageValue, final Value colorValue )
+	public static Value chat_notify( ScriptRuntime controller, final Value messageValue, final Value colorValue )
 	{
 		String messageString = StringUtilities.globalStringReplace( messageValue.toString(), "<", "&lt;" );
 
@@ -7812,7 +7812,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value who_clan( RuntimeController controller )
+	public static Value who_clan( ScriptRuntime controller )
 	{
 		InternalChatRequest request = new InternalChatRequest( "/who clan" );
 		List<ChatMessage> chatMessages = ChatSender.sendRequest( request );
@@ -7836,14 +7836,14 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value get_player_id( RuntimeController controller, final Value playerNameValue )
+	public static Value get_player_id( ScriptRuntime controller, final Value playerNameValue )
 	{
 		String playerName = playerNameValue.toString();
 
 		return new Value( ContactManager.getPlayerId( playerName, true ) );
 	}
 
-	public static Value get_player_name( RuntimeController controller, final Value playerIdValue )
+	public static Value get_player_name( ScriptRuntime controller, final Value playerIdValue )
 	{
 		String playerId = playerIdValue.toString();
 
@@ -7852,13 +7852,13 @@ public abstract class RuntimeLibrary
 
 	// Quest completion functions.
 
-	public static Value tavern( RuntimeController controller )
+	public static Value tavern( ScriptRuntime controller )
 	{
 		int result = TavernManager.locateTavernFaucet();
 		return new Value( KoLmafia.permitsContinue() ? result : -1 );
 	}
 
-	public static Value tavern( RuntimeController controller, final Value arg )
+	public static Value tavern( ScriptRuntime controller, final Value arg )
 	{
 		String goal = arg.toString();
 		int result = -1;
@@ -7881,14 +7881,14 @@ public abstract class RuntimeLibrary
 		return new Value( KoLmafia.permitsContinue() ? result : -1 );
 	}
 
-	public static Value hedge_maze( RuntimeController controller, final Value arg )
+	public static Value hedge_maze( ScriptRuntime controller, final Value arg )
 	{
 		String goal = arg.toString();
 		SorceressLairManager.hedgeMazeScript( goal );
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value tower_door( RuntimeController controller )
+	public static Value tower_door( ScriptRuntime controller )
 	{
 		TowerDoorManager.towerDoorScript();
 		return RuntimeLibrary.continueValue();
@@ -7896,7 +7896,7 @@ public abstract class RuntimeLibrary
 
 	// Arithmetic utility functions.
 
-	public static Value random( RuntimeController controller, final Value arg )
+	public static Value random( ScriptRuntime controller, final Value arg )
 	{
 		int range = (int) arg.intValue();
 		if ( range < 2 )
@@ -7906,27 +7906,27 @@ public abstract class RuntimeLibrary
 		return new Value( KoLConstants.RNG.nextInt( range ) );
 	}
 
-	public static Value round( RuntimeController controller, final Value arg )
+	public static Value round( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( Math.round( arg.floatValue() ) );
 	}
 
-	public static Value truncate( RuntimeController controller, final Value arg )
+	public static Value truncate( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( (long) arg.floatValue() );
 	}
 
-	public static Value floor( RuntimeController controller, final Value arg )
+	public static Value floor( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( (long) Math.floor( arg.floatValue() ) );
 	}
 
-	public static Value ceil( RuntimeController controller, final Value arg )
+	public static Value ceil( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( (long) Math.ceil( arg.floatValue() ) );
 	}
 
-	public static Value square_root( RuntimeController controller, final Value val )
+	public static Value square_root( ScriptRuntime controller, final Value val )
 	{
 		double value = val.floatValue();
 		if ( value < 0.0 )
@@ -7936,7 +7936,7 @@ public abstract class RuntimeLibrary
 		return new Value( Math.sqrt( value ) );
 	}
 
-	public static Value min( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value min( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		if ( arg1.getType().equals( DataTypes.INT_TYPE ) && arg2.getType().equals( DataTypes.VARARG_INT_TYPE ) )
 		{
@@ -7965,7 +7965,7 @@ public abstract class RuntimeLibrary
 
 	}
 
-	public static Value max( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value max( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		if ( arg1.getType().equals( DataTypes.INT_TYPE ) && arg2.getType().equals( DataTypes.VARARG_INT_TYPE ) )
 		{
@@ -7993,35 +7993,35 @@ public abstract class RuntimeLibrary
 		}
 	}
 
-	public static Value log_n( RuntimeController controller, final Value arg, final Value base )
+	public static Value log_n( ScriptRuntime controller, final Value arg, final Value base )
 	{
 		return new Value( Math.log( arg.floatValue() ) / Math.log( base.floatValue() ) );
 	}
 
-	public static Value log_n( RuntimeController controller, final Value arg )
+	public static Value log_n( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( Math.log( arg.floatValue() ) );
 	}
 
 	// Settings-type functions.
 
-	public static Value url_encode( RuntimeController controller, final Value arg )
+	public static Value url_encode( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( GenericRequest.encodeURL( arg.toString() ) );
 	}
 
-	public static Value url_decode( RuntimeController controller, final Value arg )
+	public static Value url_decode( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( GenericRequest.decodeField( arg.toString() ) );
 	}
 
-	public static Value entity_encode( RuntimeController controller, final Value arg )
+	public static Value entity_encode( ScriptRuntime controller, final Value arg )
 		throws UnsupportedEncodingException
 	{
 		return new Value( CharacterEntities.escape( arg.toString() ) );
 	}
 
-	public static Value entity_decode( RuntimeController controller, final Value arg )
+	public static Value entity_decode( ScriptRuntime controller, final Value arg )
 		throws UnsupportedEncodingException
 	{
 		return new Value( CharacterEntities.unescape( arg.toString() ) );
@@ -8035,7 +8035,7 @@ public abstract class RuntimeLibrary
 			name.equals( "KoLDesktop" );
 	}
 
-	public static Value get_all_properties( RuntimeController controller, final Value filterValue, final Value globalValue )
+	public static Value get_all_properties( ScriptRuntime controller, final Value filterValue, final Value globalValue )
 	{
 		// This returns a map from string -> boolean which is property name -> builtin
 		// filter is a substring (ignoring case) of the property name. 
@@ -8086,7 +8086,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value property_exists( RuntimeController controller, final Value nameValue )
+	public static Value property_exists( ScriptRuntime controller, final Value nameValue )
 	{
 		// Look up a property (in the specified scope) and return true
 		// if is present and false otherwise
@@ -8109,7 +8109,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.FALSE_VALUE;
 	}
 
-	public static Value property_exists( RuntimeController controller, final Value nameValue, final Value globalValue )
+	public static Value property_exists( ScriptRuntime controller, final Value nameValue, final Value globalValue )
 	{
 		// Look up a property (in the specified scope) and return true
 		// if is present and false otherwise
@@ -8133,13 +8133,13 @@ public abstract class RuntimeLibrary
 		return DataTypes.FALSE_VALUE;
 	}
 
-	public static Value property_has_default( RuntimeController controller, final Value nameValue )
+	public static Value property_has_default( ScriptRuntime controller, final Value nameValue )
 	{
 		String name = nameValue.toString();
 		return DataTypes.makeBooleanValue( Preferences.containsDefault( name ) );
 	}
 
-	public static Value property_default_value( RuntimeController controller, final Value nameValue )
+	public static Value property_default_value( ScriptRuntime controller, final Value nameValue )
 	{
 		String name = nameValue.toString();
 		return  Preferences.containsDefault( name ) ?
@@ -8147,7 +8147,7 @@ public abstract class RuntimeLibrary
 			DataTypes.STRING_INIT;
 	}
 
-	public static Value get_property( RuntimeController controller, final Value name )
+	public static Value get_property( ScriptRuntime controller, final Value name )
 	{
 		String property = name.toString();
 
@@ -8164,7 +8164,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.STRING_INIT;
 	}
 
-	public static Value get_property( RuntimeController controller, final Value name, final Value globalValue )
+	public static Value get_property( ScriptRuntime controller, final Value name, final Value globalValue )
 	{
 		String property = name.toString();
 
@@ -8185,7 +8185,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.STRING_INIT;
 	}
 
-	public static Value set_property( RuntimeController controller, final Value nameValue, final Value value )
+	public static Value set_property( ScriptRuntime controller, final Value nameValue, final Value value )
 	{
 		String name = nameValue.toString();
 
@@ -8203,7 +8203,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value remove_property( RuntimeController controller, final Value nameValue )
+	public static Value remove_property( ScriptRuntime controller, final Value nameValue )
 	{
 		String name = nameValue.toString();
 
@@ -8241,7 +8241,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeStringValue( oldValue );
 	}
 
-	public static Value remove_property( RuntimeController controller, final Value nameValue, final Value globalValue )
+	public static Value remove_property( ScriptRuntime controller, final Value nameValue, final Value globalValue )
 	{
 		String name = nameValue.toString();
 
@@ -8283,7 +8283,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeStringValue( oldValue );
 	}
 
-	public static Value rename_property( RuntimeController controller, final Value oldNameValue, final Value newNameValue )
+	public static Value rename_property( ScriptRuntime controller, final Value oldNameValue, final Value newNameValue )
 	{
 		String oldName = oldNameValue.toString();
 		String newName = newNameValue.toString();
@@ -8321,23 +8321,23 @@ public abstract class RuntimeLibrary
 
 	// Functions for aggregates.
 
-	public static Value count( RuntimeController controller, final Value arg )
+	public static Value count( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( arg.count() );
 	}
 
-	public static Value clear( RuntimeController controller, final Value arg )
+	public static Value clear( ScriptRuntime controller, final Value arg )
 	{
 		arg.clear();
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value file_to_map( RuntimeController controller, final Value var1, final Value var2 )
+	public static Value file_to_map( ScriptRuntime controller, final Value var1, final Value var2 )
 	{
 		return file_to_map( controller, var1, var2, DataTypes.TRUE_VALUE );
 	}
 
-	public static Value file_to_map( RuntimeController controller, final Value var1, final Value var2, final Value var3 )
+	public static Value file_to_map( ScriptRuntime controller, final Value var1, final Value var2, final Value var3 )
 	{
 		String filename = var1.toString();
 		CompositeValue result = (CompositeValue) var2;
@@ -8412,12 +8412,12 @@ public abstract class RuntimeLibrary
 		return DataTypes.TRUE_VALUE;
 	}
 
-	public static Value map_to_file( RuntimeController controller, final Value var1, final Value var2 )
+	public static Value map_to_file( ScriptRuntime controller, final Value var1, final Value var2 )
 	{
 		return map_to_file( controller, var1, var2, DataTypes.TRUE_VALUE );
 	}
 
-	public static Value map_to_file( RuntimeController controller, final Value var1, final Value var2, final Value var3 )
+	public static Value map_to_file( ScriptRuntime controller, final Value var1, final Value var2, final Value var3 )
 	{
 		CompositeValue map_variable = (CompositeValue) var1;
 		String filename = var2.toString();
@@ -8433,9 +8433,9 @@ public abstract class RuntimeLibrary
 		return DataFileCache.printBytes( filename, data );
 	}
 
-	public static Value file_to_array( RuntimeController controller, final Value var1 )
+	public static Value file_to_array( ScriptRuntime controller, final Value var1 )
 	{
-		Interpreter interpreter = controller instanceof Interpreter ? (Interpreter) controller : null;
+		AshRuntime interpreter = controller instanceof AshRuntime ? (AshRuntime) controller : null;
 
 		String filename = var1.toString();
 		MapValue result = new MapValue( DataTypes.INT_TO_STRING_TYPE );
@@ -8475,7 +8475,7 @@ public abstract class RuntimeLibrary
 		return result;
 	}
 
-	public static Value file_to_buffer( RuntimeController controller, final Value var1 )
+	public static Value file_to_buffer( ScriptRuntime controller, final Value var1 )
 	{
 		String location = var1.toString();
 		byte[] bytes = DataFileCache.getBytes( location );
@@ -8484,7 +8484,7 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.BUFFER_TYPE, "", buffer );
 	}
 
-	public static Value buffer_to_file( RuntimeController controller, final Value var1, final Value var2 )
+	public static Value buffer_to_file( ScriptRuntime controller, final Value var1, final Value var2 )
 	{
 		StringBuffer buffer = (StringBuffer) var1.rawValue();
 		String string = buffer.toString();
@@ -8495,20 +8495,20 @@ public abstract class RuntimeLibrary
 
 	// Custom combat helper functions.
 
-	public static Value my_location( RuntimeController controller )
+	public static Value my_location( ScriptRuntime controller )
 	{
 		String location = Preferences.getString( "nextAdventure" );
 		return DataTypes.parseLocationValue( location, true );
 	}
 
-	public static Value set_location( RuntimeController controller, final Value location )
+	public static Value set_location( ScriptRuntime controller, final Value location )
 	{
 		KoLAdventure adventure = (KoLAdventure) location.rawValue();
 		KoLAdventure.setNextAdventure( adventure );
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value last_monster( RuntimeController controller )
+	public static Value last_monster( ScriptRuntime controller )
 	{
 		return DataTypes.makeMonsterValue( MonsterStatusTracker.getLastMonster() );
 	}
@@ -8523,7 +8523,7 @@ public abstract class RuntimeLibrary
 		return mapped != null ? mapped : mon;
 	}
 
-	public static Value get_monsters( RuntimeController controller, final Value location )
+	public static Value get_monsters( ScriptRuntime controller, final Value location )
 	{
 		KoLAdventure adventure = (KoLAdventure) location.rawValue();
 		AreaCombatData data = adventure == null ? null : adventure.getAreaSummary();
@@ -8552,7 +8552,7 @@ public abstract class RuntimeLibrary
 
 	}
 
-	public static Value get_location_monsters( RuntimeController controller, final Value location )
+	public static Value get_location_monsters( ScriptRuntime controller, final Value location )
 	{
 		KoLAdventure adventure = (KoLAdventure) location.rawValue();
 		AreaCombatData data = adventure == null ? null : adventure.getAreaSummary();
@@ -8580,17 +8580,17 @@ public abstract class RuntimeLibrary
 
 	}
 
-	public static Value get_monster_mapping( RuntimeController controller )
+	public static Value get_monster_mapping( ScriptRuntime controller )
 	{
 		return get_monster_mapping( controller, KoLCharacter.getPath().getName() );
 	}
 
-	public static Value get_monster_mapping( RuntimeController controller, final Value path )
+	public static Value get_monster_mapping( ScriptRuntime controller, final Value path )
 	{
 		return get_monster_mapping( controller, path.toString() );
 	}
 
-	private static Value get_monster_mapping( RuntimeController controller, final String path )
+	private static Value get_monster_mapping( ScriptRuntime controller, final String path )
 	{
 		AggregateType type = new AggregateType( DataTypes.MONSTER_TYPE, DataTypes.MONSTER_TYPE );
 		MapValue value = new MapValue( type );
@@ -8608,12 +8608,12 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value appearance_rates( RuntimeController controller, final Value location )
+	public static Value appearance_rates( ScriptRuntime controller, final Value location )
 	{
 		return appearance_rates( controller, location, DataTypes.makeBooleanValue( false ) );
 	}
 
-	public static Value appearance_rates( RuntimeController controller, final Value location, final Value includeQueue )
+	public static Value appearance_rates( ScriptRuntime controller, final Value location, final Value includeQueue )
 	{
 		KoLAdventure adventure = (KoLAdventure) location.rawValue();
 		AreaCombatData data = adventure == null ? null : adventure.getAreaSummary();
@@ -8673,17 +8673,17 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value expected_damage( RuntimeController controller )
+	public static Value expected_damage( ScriptRuntime controller )
 	{
 		return expected_damage( controller, MonsterStatusTracker.getLastMonster(), MonsterStatusTracker.getMonsterAttackModifier() );
 	}
 
-	public static Value expected_damage( RuntimeController controller, final Value arg )
+	public static Value expected_damage( ScriptRuntime controller, final Value arg )
 	{
 		return expected_damage( controller, (MonsterData) arg.rawValue(), 0 );
 	}
 
-	private static Value expected_damage( RuntimeController controller, MonsterData monster, int attackModifier )
+	private static Value expected_damage( ScriptRuntime controller, MonsterData monster, int attackModifier )
 	{
 		if ( monster == null )
 		{
@@ -8710,32 +8710,32 @@ public abstract class RuntimeLibrary
 		return new Value( (int) Math.ceil( baseValue * damageAbsorb * elementAbsorb ) );
 	}
 
-	public static Value monster_level_adjustment( RuntimeController controller )
+	public static Value monster_level_adjustment( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getMonsterLevelAdjustment() );
 	}
 
-	public static Value weight_adjustment( RuntimeController controller )
+	public static Value weight_adjustment( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getFamiliarWeightAdjustment() );
 	}
 
-	public static Value mana_cost_modifier( RuntimeController controller )
+	public static Value mana_cost_modifier( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getManaCostAdjustment() );
 	}
 
-	public static Value combat_mana_cost_modifier( RuntimeController controller )
+	public static Value combat_mana_cost_modifier( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getManaCostAdjustment( true ) );
 	}
 
-	public static Value raw_damage_absorption( RuntimeController controller )
+	public static Value raw_damage_absorption( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getDamageAbsorption() );
 	}
 
-	public static Value damage_absorption_percent( RuntimeController controller )
+	public static Value damage_absorption_percent( ScriptRuntime controller )
 	{
 		int raw = Math.min( 1000, KoLCharacter.getDamageAbsorption() );
 		if ( raw == 0 )
@@ -8750,17 +8750,17 @@ public abstract class RuntimeLibrary
 		return new Value( percent );
 	}
 
-	public static Value damage_reduction( RuntimeController controller )
+	public static Value damage_reduction( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getDamageReduction() );
 	}
 
-	public static Value elemental_resistance( RuntimeController controller )
+	public static Value elemental_resistance( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getElementalResistance( MonsterStatusTracker.getMonsterAttackElement() ) );
 	}
 
-	public static Value elemental_resistance( RuntimeController controller, final Value arg )
+	public static Value elemental_resistance( ScriptRuntime controller, final Value arg )
 	{
 		if ( arg.getType().equals( DataTypes.TYPE_ELEMENT ) )
 		{
@@ -8778,54 +8778,54 @@ public abstract class RuntimeLibrary
 		return new Value( KoLCharacter.getElementalResistance( monster.getAttackElement() ) );
 	}
 
-	public static Value combat_rate_modifier( RuntimeController controller )
+	public static Value combat_rate_modifier( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getCombatRateAdjustment() );
 	}
 
-	public static Value initiative_modifier( RuntimeController controller )
+	public static Value initiative_modifier( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getInitiativeAdjustment() );
 	}
 
-	public static Value experience_bonus( RuntimeController controller )
+	public static Value experience_bonus( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getExperienceAdjustment() );
 	}
 
-	public static Value meat_drop_modifier( RuntimeController controller )
+	public static Value meat_drop_modifier( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getMeatDropPercentAdjustment() );
 	}
 
-	public static Value item_drop_modifier( RuntimeController controller )
+	public static Value item_drop_modifier( ScriptRuntime controller )
 	{
 		return new Value( KoLCharacter.getItemDropPercentAdjustment() );
 	}
 
-	public static Value buffed_hit_stat( RuntimeController controller )
+	public static Value buffed_hit_stat( ScriptRuntime controller )
 	{
 		int hitStat = EquipmentManager.getAdjustedHitStat();
 		return new Value( hitStat );
 	}
 
-	public static Value current_hit_stat( RuntimeController controller )
+	public static Value current_hit_stat( ScriptRuntime controller )
 	{
 		return EquipmentManager.getHitStatType() == Stat.MOXIE ? DataTypes.MOXIE_VALUE : DataTypes.MUSCLE_VALUE;
 	}
 
-	public static Value current_round( RuntimeController controller )
+	public static Value current_round( ScriptRuntime controller )
 	{
 		return new Value( FightRequest.getCurrentRound() );
 	}
 
-	public static Value monster_element( RuntimeController controller )
+	public static Value monster_element( ScriptRuntime controller )
 	{
 		Element element = MonsterStatusTracker.getMonsterDefenseElement();
 		return new Value( DataTypes.ELEMENT_TYPE, element.toString(), element );
 	}
 
-	public static Value monster_element( RuntimeController controller, final Value arg )
+	public static Value monster_element( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -8837,12 +8837,12 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.ELEMENT_TYPE, element.toString(), element );
 	}
 
-	public static Value monster_attack( RuntimeController controller )
+	public static Value monster_attack( ScriptRuntime controller )
 	{
 		return new Value( MonsterStatusTracker.getMonsterAttack() );
 	}
 
-	public static Value monster_attack( RuntimeController controller, final Value arg )
+	public static Value monster_attack( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -8853,12 +8853,12 @@ public abstract class RuntimeLibrary
 		return new Value( monster.getAttack() );
 	}
 
-	public static Value monster_defense( RuntimeController controller )
+	public static Value monster_defense( ScriptRuntime controller )
 	{
 		return new Value( MonsterStatusTracker.getMonsterDefense() );
 	}
 
-	public static Value monster_defense( RuntimeController controller, final Value arg )
+	public static Value monster_defense( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -8869,12 +8869,12 @@ public abstract class RuntimeLibrary
 		return new Value( monster.getDefense() );
 	}
 
-	public static Value monster_initiative( RuntimeController controller )
+	public static Value monster_initiative( ScriptRuntime controller )
 	{
 		return new Value( MonsterStatusTracker.getMonsterInitiative() );
 	}
 
-	public static Value monster_initiative( RuntimeController controller, final Value arg )
+	public static Value monster_initiative( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -8885,12 +8885,12 @@ public abstract class RuntimeLibrary
 		return new Value( monster.getInitiative() );
 	}
 
-	public static Value monster_hp( RuntimeController controller )
+	public static Value monster_hp( ScriptRuntime controller )
 	{
 		return new Value( MonsterStatusTracker.getMonsterHealth() );
 	}
 
-	public static Value monster_hp( RuntimeController controller, final Value arg )
+	public static Value monster_hp( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -8901,13 +8901,13 @@ public abstract class RuntimeLibrary
 		return new Value( monster.getHP() );
 	}
 
-	public static Value monster_phylum( RuntimeController controller )
+	public static Value monster_phylum( ScriptRuntime controller )
 	{
 		Phylum phylum = MonsterStatusTracker.getMonsterPhylum();
 		return new Value( DataTypes.PHYLUM_TYPE, phylum.toString(), phylum );
 	}
 
-	public static Value monster_phylum( RuntimeController controller, final Value arg )
+	public static Value monster_phylum( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -8919,7 +8919,7 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.PHYLUM_TYPE, phylum.toString(), phylum );
 	}
 
-	public static Value is_banished( RuntimeController controller, final Value arg )
+	public static Value is_banished( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -8929,12 +8929,12 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( BanishManager.isBanished( monster.getName() ) );
 	}
 
-	public static Value jump_chance( RuntimeController controller )
+	public static Value jump_chance( ScriptRuntime controller )
 	{
 		return new Value( MonsterStatusTracker.getJumpChance() );
 	}
 
-	public static Value jump_chance( RuntimeController controller, final Value arg )
+	public static Value jump_chance( ScriptRuntime controller, final Value arg )
 	{
 		if ( arg.getType().equals( DataTypes.TYPE_MONSTER ) )
 		{
@@ -8977,7 +8977,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.ZERO_VALUE;
 	}
 
-	public static Value jump_chance( RuntimeController controller, final Value arg, final Value init )
+	public static Value jump_chance( ScriptRuntime controller, final Value arg, final Value init )
 	{
 		int initiative = (int) init.intValue();
 		if ( arg.getType().equals( DataTypes.TYPE_MONSTER ) )
@@ -9021,7 +9021,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.ZERO_VALUE;
 	}
 
-	public static Value jump_chance( RuntimeController controller, final Value arg, final Value init, final Value ml )
+	public static Value jump_chance( ScriptRuntime controller, final Value arg, final Value init, final Value ml )
 	{
 		int initiative = (int) init.intValue();
 		int monsterLevel = (int) ml.intValue();
@@ -9056,7 +9056,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.ZERO_VALUE;
 	}
 
-	public static Value item_drops( RuntimeController controller )
+	public static Value item_drops( ScriptRuntime controller )
 	{
 		MonsterData monster = MonsterStatusTracker.getLastMonster();
 		List<AdventureResult> data = monster == null ? new ArrayList<>() : monster.getItems();
@@ -9074,7 +9074,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value item_drops( RuntimeController controller, final Value arg )
+	public static Value item_drops( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		List<AdventureResult> data = monster == null ? new ArrayList<>() : monster.getItems();
@@ -9092,17 +9092,17 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value item_drops_array( RuntimeController controller )
+	public static Value item_drops_array( ScriptRuntime controller )
 	{
 		return item_drops_array( controller, MonsterStatusTracker.getLastMonster() );
 	}
 
-	public static Value item_drops_array( RuntimeController controller, final Value arg )
+	public static Value item_drops_array( ScriptRuntime controller, final Value arg )
 	{
 		return item_drops_array( controller, (MonsterData) arg.rawValue() );
 	}
 
-	public static Value item_drops_array( RuntimeController controller, MonsterData monster )
+	public static Value item_drops_array( ScriptRuntime controller, MonsterData monster )
 	{
 		List<AdventureResult> data = monster == null ? new ArrayList<>() : monster.getItems();
 		int dropCount = data.size();
@@ -9126,7 +9126,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value svn_info( RuntimeController controller, final Value script )
+	public static Value svn_info( ScriptRuntime controller, final Value script )
 	{
 		String[] projects = KoLConstants.SVN_LOCATION.list();
 		
@@ -9208,7 +9208,7 @@ public abstract class RuntimeLibrary
 		return rec;
 	}
 
-	public static Value meat_drop( RuntimeController controller )
+	public static Value meat_drop( ScriptRuntime controller )
 	{
 		MonsterData monster = MonsterStatusTracker.getLastMonster();
 		if ( monster == null )
@@ -9219,7 +9219,7 @@ public abstract class RuntimeLibrary
 		return new Value( monster.getBaseMeat() );
 	}
 
-	public static Value meat_drop( RuntimeController controller, final Value arg )
+	public static Value meat_drop( ScriptRuntime controller, final Value arg )
 	{
 		MonsterData monster = (MonsterData) arg.rawValue();
 		if ( monster == null )
@@ -9230,17 +9230,17 @@ public abstract class RuntimeLibrary
 		return new Value( monster.getBaseMeat() );
 	}
 
-	public static Value will_usually_dodge( RuntimeController controller )
+	public static Value will_usually_dodge( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( MonsterStatusTracker.willUsuallyDodge() );
 	}
 
-	public static Value will_usually_miss( RuntimeController controller )
+	public static Value will_usually_miss( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( MonsterStatusTracker.willUsuallyMiss() );
 	}
 
-	public static Value dad_sea_monkee_weakness( RuntimeController controller, final Value arg )
+	public static Value dad_sea_monkee_weakness( ScriptRuntime controller, final Value arg )
 	{
 		DadManager.Element element = DadManager.weakness( (int)arg.intValue() );
 		switch ( element )
@@ -9259,28 +9259,28 @@ public abstract class RuntimeLibrary
 		return DataTypes.ELEMENT_INIT;
 	}
 
-	public static Value unusual_construct_disc( RuntimeController controller )
+	public static Value unusual_construct_disc( ScriptRuntime controller )
 	{
 		return DataTypes.makeItemValue( UnusualConstructManager.disc(), true );
 	}
 
-	public static Value flush_monster_manuel_cache( RuntimeController controller )
+	public static Value flush_monster_manuel_cache( ScriptRuntime controller )
 	{
 		MonsterManuelManager.flushCache();
 		return DataTypes.TRUE_VALUE;
 	}
 
-	public static Value monster_manuel_text( RuntimeController controller, final Value arg )
+	public static Value monster_manuel_text( ScriptRuntime controller, final Value arg )
 	{
 		return new Value( MonsterManuelManager.getManuelText( (int) arg.intValue() ) );
 	}
 
-	public static Value monster_factoids_available( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value monster_factoids_available( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		return new Value( MonsterManuelManager.getFactoidsAvailable( (int) arg1.intValue(), arg2.intValue() != 0 ) );
 	}
 
-	public static Value all_monsters_with_id( RuntimeController controller )
+	public static Value all_monsters_with_id( ScriptRuntime controller )
 	{
 		AggregateType type = new AggregateType( DataTypes.BOOLEAN_TYPE, DataTypes.MONSTER_TYPE );
 		MapValue value = new MapValue( type );
@@ -9340,13 +9340,13 @@ public abstract class RuntimeLibrary
 		return name;
 	}
 
-	public static Value numeric_modifier( RuntimeController controller, final Value modifier )
+	public static Value numeric_modifier( ScriptRuntime controller, final Value modifier )
 	{
 		String mod = modifier.toString();
 		return new Value( KoLCharacter.currentNumericModifier( mod ) );
 	}
 
-	public static Value numeric_modifier( RuntimeController controller, final Value arg, final Value modifier )
+	public static Value numeric_modifier( ScriptRuntime controller, final Value arg, final Value modifier )
 	{
 		String type = RuntimeLibrary.getModifierType( arg );
 		String name = RuntimeLibrary.getModifierName( arg );
@@ -9354,7 +9354,7 @@ public abstract class RuntimeLibrary
 		return new Value( Modifiers.getNumericModifier( type, name, mod ) );
 	}
 
-	public static Value numeric_modifier( RuntimeController controller, final Value familiar, final Value modifier, final Value weight, final Value item )
+	public static Value numeric_modifier( ScriptRuntime controller, final Value familiar, final Value modifier, final Value weight, final Value item )
 	{
 		FamiliarData fam = new FamiliarData( (int) familiar.intValue() );
 		String mod = modifier.toString();
@@ -9364,13 +9364,13 @@ public abstract class RuntimeLibrary
 		return new Value( Modifiers.getNumericModifier( fam, mod, w, it ) );
 	}
 
-	public static Value boolean_modifier( RuntimeController controller, final Value modifier )
+	public static Value boolean_modifier( ScriptRuntime controller, final Value modifier )
 	{
 		String mod = modifier.toString();
 		return DataTypes.makeBooleanValue( KoLCharacter.currentBooleanModifier( mod ) );
 	}
 
-	public static Value boolean_modifier( RuntimeController controller, final Value arg, final Value modifier )
+	public static Value boolean_modifier( ScriptRuntime controller, final Value arg, final Value modifier )
 	{
 		String type = RuntimeLibrary.getModifierType( arg );
 		String name = RuntimeLibrary.getModifierName( arg );
@@ -9378,13 +9378,13 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( Modifiers.getBooleanModifier( type, name, mod ) );
 	}
 
-	public static Value string_modifier( RuntimeController controller, final Value modifier )
+	public static Value string_modifier( ScriptRuntime controller, final Value modifier )
 	{
 		String mod = modifier.toString();
 		return new Value( KoLCharacter.currentStringModifier( mod ) );
 	}
 
-	public static Value string_modifier( RuntimeController controller, final Value arg, final Value modifier )
+	public static Value string_modifier( ScriptRuntime controller, final Value arg, final Value modifier )
 	{
 		String type = RuntimeLibrary.getModifierType( arg );
 		String name = RuntimeLibrary.getModifierName( arg );
@@ -9392,7 +9392,7 @@ public abstract class RuntimeLibrary
 		return new Value( Modifiers.getStringModifier( type, name, mod ) );
 	}
 
-	public static Value effect_modifier( RuntimeController controller, final Value arg, final Value modifier )
+	public static Value effect_modifier( ScriptRuntime controller, final Value arg, final Value modifier )
 	{
 		String type = RuntimeLibrary.getModifierType( arg );
 		String name = RuntimeLibrary.getModifierName( arg );
@@ -9400,7 +9400,7 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.parseEffectValue( Modifiers.getStringModifier( type, name, mod ), true ) );
 	}
 
-	public static Value class_modifier( RuntimeController controller, final Value arg, final Value modifier )
+	public static Value class_modifier( ScriptRuntime controller, final Value arg, final Value modifier )
 	{
 		String type = RuntimeLibrary.getModifierType( arg );
 		String name = RuntimeLibrary.getModifierName( arg );
@@ -9408,7 +9408,7 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.parseClassValue( Modifiers.getStringModifier( type, name, mod ), true ) );
 	}
 
-	public static Value skill_modifier( RuntimeController controller, final Value arg, final Value modifier )
+	public static Value skill_modifier( ScriptRuntime controller, final Value arg, final Value modifier )
 	{
 		String type = RuntimeLibrary.getModifierType( arg );
 		String name = RuntimeLibrary.getModifierName( arg );
@@ -9416,7 +9416,7 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.parseSkillValue( Modifiers.getStringModifier( type, name, mod ), true ) );
 	}
 
-	public static Value stat_modifier( RuntimeController controller, final Value arg, final Value modifier )
+	public static Value stat_modifier( ScriptRuntime controller, final Value arg, final Value modifier )
 	{
 		String type = RuntimeLibrary.getModifierType( arg );
 		String name = RuntimeLibrary.getModifierName( arg );
@@ -9424,64 +9424,64 @@ public abstract class RuntimeLibrary
 		return new Value( DataTypes.parseStatValue( Modifiers.getStringModifier( type, name, mod ), true ) );
 	}
 
-	public static Value white_citadel_available( RuntimeController controller )
+	public static Value white_citadel_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( QuestLogRequest.isWhiteCitadelAvailable() );
 	}
 
-	public static Value friars_available( RuntimeController controller )
+	public static Value friars_available( ScriptRuntime controller )
 	{
 		if ( QuestLogRequest.areFriarsAvailable() )
 			Preferences.setInteger( "lastFriarCeremonyAscension", Preferences.getInteger( "knownAscensions" ));
 		return DataTypes.makeBooleanValue( QuestLogRequest.areFriarsAvailable() );
 	}
 
-	public static Value black_market_available( RuntimeController controller )
+	public static Value black_market_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( QuestLogRequest.isBlackMarketAvailable() );
 	}
 
-	public static Value hippy_store_available( RuntimeController controller )
+	public static Value hippy_store_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( QuestLogRequest.isHippyStoreAvailable() );
 	}
 
-	public static Value dispensary_available( RuntimeController controller )
+	public static Value dispensary_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.getDispensaryOpen() );
 	}
 
-	public static Value guild_store_available( RuntimeController controller )
+	public static Value guild_store_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.getGuildStoreOpen() );
 	}
 
-	public static Value hidden_temple_unlocked( RuntimeController controller )
+	public static Value hidden_temple_unlocked( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.getTempleUnlocked() );
 	}
 
-	public static Value knoll_available( RuntimeController controller )
+	public static Value knoll_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.knollAvailable() );
 	}
 
-	public static Value canadia_available( RuntimeController controller )
+	public static Value canadia_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.canadiaAvailable() );
 	}
 
-	public static Value gnomads_available( RuntimeController controller )
+	public static Value gnomads_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( KoLCharacter.gnomadsAvailable() );
 	}
 
-	public static Value florist_available( RuntimeController controller )
+	public static Value florist_available( ScriptRuntime controller )
 	{
 		return DataTypes.makeBooleanValue( FloristRequest.haveFlorist() );
 	}
 
-	public static Value is_trendy( RuntimeController controller, final Value thing )
+	public static Value is_trendy( ScriptRuntime controller, final Value thing )
 	{
 		// Types: "Items", "Campground", "Bookshelf", "Familiars", "Skills", "Clan Item".
 		String key = thing.toString();
@@ -9527,7 +9527,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( result );
 	}
 
-	public static Value is_unrestricted( RuntimeController controller, final Value thing )
+	public static Value is_unrestricted( ScriptRuntime controller, final Value thing )
 	{
 		// Types: "Items", "Bookshelf Books", "Skills", "Familiars", "Clan Items".
 		String key = thing.toString();
@@ -9576,7 +9576,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( result );
 	}
 
-	public static Value svn_exists( RuntimeController controller, final Value project )
+	public static Value svn_exists( ScriptRuntime controller, final Value project )
 	{
 		File f = new File( KoLConstants.SVN_LOCATION, project.toString() );
 
@@ -9592,7 +9592,7 @@ public abstract class RuntimeLibrary
 		return DataTypes.makeBooleanValue( isWCRoot );
 	}
 
-	public static Value svn_at_head( RuntimeController controller, final Value project )
+	public static Value svn_at_head( ScriptRuntime controller, final Value project )
 	{
 		File f = new File( KoLConstants.SVN_LOCATION, project.toString() );
 
@@ -9605,18 +9605,18 @@ public abstract class RuntimeLibrary
 
 	// Sweet Synthesis
 
-	public static Value update_candy_prices( RuntimeController controller )
+	public static Value update_candy_prices( ScriptRuntime controller )
 	{
 		CandyDatabase.updatePrices();
 		return DataTypes.VOID_VALUE;
 	}
 
-	public static Value candy_for_tier( RuntimeController controller, final Value arg )
+	public static Value candy_for_tier( ScriptRuntime controller, final Value arg )
 	{
 		return RuntimeLibrary.candy_for_tier( controller, arg, DataTypes.makeIntValue( CandyDatabase.defaultFlags() ) );
 	}
 
-	public static Value candy_for_tier( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value candy_for_tier( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		int tier = (int) arg1.intValue();
 		int flags = (int) arg2.intValue();
@@ -9647,12 +9647,12 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value sweet_synthesis_pairing( RuntimeController controller, final Value arg1, final Value arg2  )
+	public static Value sweet_synthesis_pairing( ScriptRuntime controller, final Value arg1, final Value arg2  )
 	{
 		return RuntimeLibrary.sweet_synthesis_pairing( controller, arg1, arg2, DataTypes.makeIntValue( CandyDatabase.defaultFlags() ) );
 	}
 
-	public static Value sweet_synthesis_pairing( RuntimeController controller, final Value arg1, final Value arg2, final Value arg3  )
+	public static Value sweet_synthesis_pairing( ScriptRuntime controller, final Value arg1, final Value arg2, final Value arg3  )
 	{
 		int effectId = (int) arg1.intValue();
 		int itemId = (int) arg2.intValue();
@@ -9684,12 +9684,12 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value sweet_synthesis_pair( RuntimeController controller, final Value arg1  )
+	public static Value sweet_synthesis_pair( ScriptRuntime controller, final Value arg1  )
 	{
 		return RuntimeLibrary.sweet_synthesis_pair( controller, arg1, DataTypes.makeIntValue( CandyDatabase.defaultFlags() ) );
 	}
 
-	public static Value sweet_synthesis_pair( RuntimeController controller, final Value arg1, final Value arg2  )
+	public static Value sweet_synthesis_pair( ScriptRuntime controller, final Value arg1, final Value arg2  )
 	{
 		int effectId = (int) arg1.intValue();
 		int flags = (int) arg2.intValue();
@@ -9713,7 +9713,7 @@ public abstract class RuntimeLibrary
 		return value;
 	}
 
-	public static Value sweet_synthesis_result( RuntimeController controller, final Value item1, final Value item2 )
+	public static Value sweet_synthesis_result( ScriptRuntime controller, final Value item1, final Value item2 )
 	{
 		int itemId1 = (int) item1.intValue();
 		int itemId2 = (int) item2.intValue();
@@ -9721,7 +9721,7 @@ public abstract class RuntimeLibrary
 		return effectId == -1 ? DataTypes.EFFECT_INIT : DataTypes.makeEffectValue( effectId, true );
 	}
 
-	public static Value sweet_synthesis( RuntimeController controller, final Value effect )
+	public static Value sweet_synthesis( ScriptRuntime controller, final Value effect )
 	{
 		// one-argument forms
 
@@ -9732,7 +9732,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.synthesize_effect( controller, count, effectId, flags );
 	}
 
-	public static Value sweet_synthesis( RuntimeController controller, final Value arg1, final Value arg2 )
+	public static Value sweet_synthesis( ScriptRuntime controller, final Value arg1, final Value arg2 )
 	{
 		// two-argument forms
 
@@ -9769,7 +9769,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.synthesize_pair( controller, 1, itemId1, itemId2 );
 	}
 
-	public static Value sweet_synthesis( RuntimeController controller, final Value arg1, final Value arg2, final Value arg3 )
+	public static Value sweet_synthesis( ScriptRuntime controller, final Value arg1, final Value arg2, final Value arg3 )
 	{
 		// three-argument forms
 
@@ -9798,7 +9798,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.synthesize_pair( controller, count, itemId1, itemId2 );
 	}
 
-	private static Value synthesize_effect( RuntimeController controller, int count, int effectId, int flags )
+	private static Value synthesize_effect( ScriptRuntime controller, int count, int effectId, int flags )
 	{
 		if ( count <= 0 )
 		{
@@ -9850,7 +9850,7 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	private static Value synthesize_pair( RuntimeController controller, int count, int itemId1, int itemId2 )
+	private static Value synthesize_pair( ScriptRuntime controller, int count, int itemId1, int itemId2 )
 	{
 		// SweetSynthesisRequest will retrieve the candies and fail if they are unavailable
 
@@ -9859,12 +9859,12 @@ public abstract class RuntimeLibrary
 		return RuntimeLibrary.continueValue();
 	}
 
-	public static Value get_fuel( RuntimeController controller )
+	public static Value get_fuel( ScriptRuntime controller )
 	{
 		return new Value( CampgroundRequest.getFuel() );
 	}
 
-	public static Value voting_booth_initiatives( RuntimeController controller, final Value clss, final Value path, final Value daycount )
+	public static Value voting_booth_initiatives( ScriptRuntime controller, final Value clss, final Value path, final Value daycount )
 	{
 		AggregateType type = new AggregateType( DataTypes.BOOLEAN_TYPE, DataTypes.STRING_TYPE );
 		MapValue value = new MapValue( type );
@@ -9878,75 +9878,75 @@ public abstract class RuntimeLibrary
 	}
 
 	// pocket_set picked_pockets();
-	public static Value picked_pockets( RuntimeController controller )
+	public static Value picked_pockets( ScriptRuntime controller )
 	{
 		return makePocketSet( CargoCultistShortsRequest.pickedPockets );
 	}
 
 	// pocket_set picked_scraps()
-	public static Value picked_scraps( RuntimeController controller )
+	public static Value picked_scraps( ScriptRuntime controller )
 	{
 		return makePocketSet( CargoCultistShortsRequest.knownScrapPockets().keySet() );
 	}
 
 	// pocket_set monster_pockets();
-	public static Value monster_pockets( RuntimeController controller )
+	public static Value monster_pockets( ScriptRuntime controller )
 	{
 		return makePocketSet( PocketDatabase.allMonsterPockets );
 	}
 
 	// pocket_set effect_pockets();
-	public static Value effect_pockets( RuntimeController controller )
+	public static Value effect_pockets( ScriptRuntime controller )
 	{
 		return makePocketSet( PocketDatabase.allEffectPockets );
 	}
 
 	// pocket_set item_pockets();
-	public static Value item_pockets( RuntimeController controller )
+	public static Value item_pockets( ScriptRuntime controller )
 	{
 		return makePocketSet( PocketDatabase.allItemPockets );
 	}
 
 	// pocket_set stats_pockets();
-	public static Value stats_pockets( RuntimeController controller )
+	public static Value stats_pockets( ScriptRuntime controller )
 	{
 		return makePocketSet( PocketDatabase.allStatsPockets );
 	}
 
 	// pocket_list meat_pockets();
-	public static Value meat_pockets( RuntimeController controller )
+	public static Value meat_pockets( ScriptRuntime controller )
 	{
 		return makePocketList( PocketDatabase.meatPockets );
 	}
 
 	// pocket_list poem_pockets();
-	public static Value poem_pockets( RuntimeController controller )
+	public static Value poem_pockets( ScriptRuntime controller )
 	{
 		return makePocketList( PocketDatabase.poemHalfLines );
 	}
 
 	// pocket_list scrap_pockets();
-	public static Value scrap_pockets( RuntimeController controller )
+	public static Value scrap_pockets( ScriptRuntime controller )
 	{
 		return makePocketList( PocketDatabase.scrapSyllables );
 	}
 
 	// pocket_set joke_pockets();
-	public static Value joke_pockets( RuntimeController controller )
+	public static Value joke_pockets( ScriptRuntime controller )
 	{
 
 		return makePocketSet( PocketDatabase.getPockets( PocketType.JOKE ).keySet() );
 	}
 
 	// pocket_set restoration_pockets();
-	public static Value restoration_pockets( RuntimeController controller )
+	public static Value restoration_pockets( ScriptRuntime controller )
 	{
 
 		return makePocketSet( PocketDatabase.getPockets( PocketType.RESTORE ).keySet() );
 	}
 
 	// monster pocket_monster( pocket p );
-	public static Value pocket_monster( RuntimeController controller, final Value pocket )
+	public static Value pocket_monster( ScriptRuntime controller, final Value pocket )
 	{
 		Pocket p = PocketDatabase.pocketByNumber( (int)pocket.intValue() );
 		if ( p instanceof MonsterPocket )
@@ -9958,43 +9958,43 @@ public abstract class RuntimeLibrary
 	}
 
 	// pocket_effects pocket_effects( pocket p );
-	public static Value pocket_effects( RuntimeController controller, final Value pocket )
+	public static Value pocket_effects( ScriptRuntime controller, final Value pocket )
 	{
 		return makePocketEffects( (int) pocket.intValue() );
 	}
 
 	// pocket_items pocket_items( pocket p );
-	public static Value pocket_items( RuntimeController controller, final Value pocket )
+	public static Value pocket_items( ScriptRuntime controller, final Value pocket )
 	{
 		return makePocketItems( (int) pocket.intValue() );
 	}
 
 	// pocket_stats pocket_stats( pocket p );
-	public static Value pocket_stats( RuntimeController controller, final Value pocket )
+	public static Value pocket_stats( ScriptRuntime controller, final Value pocket )
 	{
 		return makePocketStats( (int) pocket.intValue() );
 	}
 
 	// indexed_text pocket_scrap( pocket p );
-	public static Value pocket_scrap( RuntimeController controller, final Value pocket )
+	public static Value pocket_scrap( ScriptRuntime controller, final Value pocket )
 	{
 		return makeIndexedText( (int) pocket.intValue() );
 	}
 
 	// indexed_text pocket_poem( pocket p );
-	public static Value pocket_poem( RuntimeController controller, final Value pocket )
+	public static Value pocket_poem( ScriptRuntime controller, final Value pocket )
 	{
 		return makeIndexedText( (int) pocket.intValue() );
 	}
 
 	// int pocket_meat( pocket p );
-	public static Value pocket_meat( RuntimeController controller, final Value pocket )
+	public static Value pocket_meat( ScriptRuntime controller, final Value pocket )
 	{
 		return makeIndexedText( (int) pocket.intValue() );
 	}
 
 	// int pocket_meat( pocket p );
-	public static Value pocket_joke( RuntimeController controller, final Value pocket )
+	public static Value pocket_joke( ScriptRuntime controller, final Value pocket )
 	{
 		Pocket p = PocketDatabase.pocketByNumber( (int) pocket.intValue() );
 		if ( p != null && p.getType() == PocketType.JOKE )
@@ -10009,7 +10009,7 @@ public abstract class RuntimeLibrary
 	// pocket_list potential_pockets( effect e );
 	// pocket_list potential_pockets( item e );
 	// pocket_list potential_pockets( stat s );
-	public static Value potential_pockets( RuntimeController controller, final Value arg )
+	public static Value potential_pockets( ScriptRuntime controller, final Value arg )
 	{
 		List<Pocket> sorted = sortedPockets( arg.getType(), arg.toString() );
 		return makePocketList( sorted );
@@ -10019,7 +10019,7 @@ public abstract class RuntimeLibrary
 	// pocket available_pocket( effect e );
 	// pocket available_pocket( item i );
 	// pocket available_pocket( stat s );
-	public static Value available_pocket( RuntimeController controller, final Value arg )
+	public static Value available_pocket( ScriptRuntime controller, final Value arg )
 	{
 		List<Pocket> sorted = sortedPockets( arg.getType(), arg.toString() );
 		Pocket pocket = PocketDatabase.firstUnpickedPocket( sorted );
@@ -10031,7 +10031,7 @@ public abstract class RuntimeLibrary
 	// boolean pick_pocket( effect e );
 	// boolean pick_pocket( item i );
 	// boolean pick_pocket( stat s );
-	public static Value pick_pocket( RuntimeController controller, final Value arg )
+	public static Value pick_pocket( ScriptRuntime controller, final Value arg )
 	{
 		Type type = arg.getType();
 		Pocket pocket =

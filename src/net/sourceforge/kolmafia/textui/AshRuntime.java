@@ -67,16 +67,16 @@ import net.sourceforge.kolmafia.textui.parsetree.VariableReference;
 import net.sourceforge.kolmafia.utilities.CharacterEntities;
 import net.sourceforge.kolmafia.utilities.NullStream;
 
-public class Interpreter implements RuntimeController
+public class AshRuntime implements ScriptRuntime
 {
 	protected Parser parser;
 	protected Scope scope;
 
 	// Variables used during execution
 
-	private static final Stack<Interpreter> interpreterStack = new Stack<>();
+	private static final Stack<AshRuntime> interpreterStack = new Stack<>();
 
-	private RuntimeController.State currentState = RuntimeController.State.NORMAL;
+	private ScriptRuntime.State currentState = ScriptRuntime.State.NORMAL;
 	private boolean exiting = false;
 	private int traceIndentation = 0;
 	public Profiler profiler;
@@ -110,27 +110,27 @@ public class Interpreter implements RuntimeController
 
 	public static boolean isTracing()
 	{
-		return Interpreter.traceStream != NullStream.INSTANCE;
+		return AshRuntime.traceStream != NullStream.INSTANCE;
 	}
 
 	public static void openTraceStream()
 	{
-		Interpreter.traceStream =
-			RequestLogger.openStream( "ASH_" + KoLConstants.DAILY_FORMAT.format( new Date() ) + ".txt", Interpreter.traceStream, true );
+		AshRuntime.traceStream =
+			RequestLogger.openStream( "ASH_" + KoLConstants.DAILY_FORMAT.format( new Date() ) + ".txt", AshRuntime.traceStream, true );
 	}
 
 	public static void println(final String string )
 	{
-		Interpreter.traceStream.println( string );
+		AshRuntime.traceStream.println( string );
 	}
 
 	public static void closeTraceStream()
 	{
-		RequestLogger.closeStream( Interpreter.traceStream );
-		Interpreter.traceStream = NullStream.INSTANCE;
+		RequestLogger.closeStream( AshRuntime.traceStream );
+		AshRuntime.traceStream = NullStream.INSTANCE;
 	}
 
-	public Interpreter()
+	public AshRuntime()
 	{
 		this.parser = new Parser();
 		this.scope = new Scope( new VariableList(), Parser.getExistingFunctionScope() );
@@ -173,7 +173,7 @@ public class Interpreter implements RuntimeController
 		this.serverReplyBuffer = null;
 	}
 
-	public void cloneRelayScript( final RuntimeController caller )
+	public void cloneRelayScript( final ScriptRuntime caller )
 	{
 		this.finishRelayScript();
 		if ( caller != null )
@@ -204,16 +204,16 @@ public class Interpreter implements RuntimeController
 	}
 
 	@Override
-	public RuntimeController.State getState()
+	public ScriptRuntime.State getState()
 	{
 		return this.currentState;
 	}
 
-	public void setState( final RuntimeController.State state )
+	public void setState( final ScriptRuntime.State state )
 	{
 		this.currentState = state;
 
-		if (state == RuntimeController.State.EXIT && Preferences.getBoolean( "printStackOnAbort" ) )
+		if (state == ScriptRuntime.State.EXIT && Preferences.getBoolean( "printStackOnAbort" ) )
 		{
 			this.printStackTrace();
 		}
@@ -221,24 +221,24 @@ public class Interpreter implements RuntimeController
 
 	public static void rememberPendingState()
 	{
-		if ( Interpreter.interpreterStack.isEmpty() )
+		if ( AshRuntime.interpreterStack.isEmpty() )
 		{
 			return;
 		}
 
-		Interpreter current = Interpreter.interpreterStack.peek();
+		AshRuntime current = AshRuntime.interpreterStack.peek();
 
 		current.hadPendingState = true;
 	}
 
 	public static void forgetPendingState()
 	{
-		if ( Interpreter.interpreterStack.isEmpty() )
+		if ( AshRuntime.interpreterStack.isEmpty() )
 		{
 			return;
 		}
 
-		Interpreter current = Interpreter.interpreterStack.peek();
+		AshRuntime current = AshRuntime.interpreterStack.peek();
 
 		current.hadPendingState = false;
 	}
@@ -250,12 +250,12 @@ public class Interpreter implements RuntimeController
 			return false;
 		}
 
-		if ( Interpreter.interpreterStack.isEmpty() )
+		if ( AshRuntime.interpreterStack.isEmpty() )
 		{
 			return true;
 		}
 
-		Interpreter current = Interpreter.interpreterStack.peek();
+		AshRuntime current = AshRuntime.interpreterStack.peek();
 
 		return !current.hadPendingState;
 	}
@@ -287,7 +287,7 @@ public class Interpreter implements RuntimeController
 			this.parser = new Parser( scriptFile, stream, null );
 			this.scope = parser.parse();
 			this.resetTracing();
-			if ( Interpreter.isTracing() )
+			if ( AshRuntime.isTracing() )
 			{
 				this.printScope( this.scope );
 			}
@@ -352,9 +352,9 @@ public class Interpreter implements RuntimeController
 		Function main;
 		Value result = null;
 
-		Interpreter.interpreterStack.push( this );
+		AshRuntime.interpreterStack.push( this );
 
-		this.currentState = RuntimeController.State.NORMAL;
+		this.currentState = ScriptRuntime.State.NORMAL;
 		this.exiting = false;
 		this.resetTracing();
 
@@ -377,14 +377,14 @@ public class Interpreter implements RuntimeController
 
 		if ( executeTopLevel )
 		{
-			if ( Interpreter.isTracing() )
+			if ( AshRuntime.isTracing() )
 			{
 				this.trace( "Executing top-level commands" );
 			}
 			result = topScope.execute( this );
 		}
 
-		if (this.currentState == RuntimeController.State.EXIT)
+		if (this.currentState == ScriptRuntime.State.EXIT)
 		{
 			return result;
 		}
@@ -392,7 +392,7 @@ public class Interpreter implements RuntimeController
 		// Now execute main function, if any
 		if ( main != null )
 		{
-			if ( Interpreter.isTracing() )
+			if ( AshRuntime.isTracing() )
 			{
 				this.trace( "Executing main function" );
 			}
@@ -410,7 +410,7 @@ public class Interpreter implements RuntimeController
 			result = main.execute( this, values );
 			this.popFrame();
 		}
-		Interpreter.interpreterStack.pop();
+		AshRuntime.interpreterStack.pop();
 
 		return result;
 	}
@@ -637,9 +637,9 @@ public class Interpreter implements RuntimeController
 
 	private void indentLine(final int indent )
 	{
-		if ( Interpreter.isTracing() )
+		if ( AshRuntime.isTracing() )
 		{
-			Interpreter.indentLine( traceStream, indent );
+			AshRuntime.indentLine( traceStream, indent );
 		}
 	}
 
@@ -655,7 +655,7 @@ public class Interpreter implements RuntimeController
 
 	public final void trace( final String string )
 	{
-		if ( Interpreter.isTracing() )
+		if ( AshRuntime.isTracing() )
 		{
 			this.indentLine( this.traceIndentation );
 			traceStream.println( string );
@@ -681,14 +681,14 @@ public class Interpreter implements RuntimeController
 		if ( KoLmafia.refusesContinue() || value == null )
 		{
 			// User aborted
-			this.setState( RuntimeController.State.EXIT );
+			this.setState( ScriptRuntime.State.EXIT );
 			return;
 		}
 
 		// Even if an error occurred, since we captured the result,
 		// permit further execution.
 
-		this.setState( RuntimeController.State.NORMAL );
+		this.setState( ScriptRuntime.State.NORMAL );
 		KoLmafia.forceContinue();
 	}
 

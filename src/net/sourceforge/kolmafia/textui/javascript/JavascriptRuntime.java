@@ -42,7 +42,7 @@ import net.sourceforge.kolmafia.textui.parsetree.Function;
 import net.sourceforge.kolmafia.textui.parsetree.LibraryFunction;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 import net.sourceforge.kolmafia.textui.Parser;
-import net.sourceforge.kolmafia.textui.RuntimeController;
+import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
 import net.sourceforge.kolmafia.textui.ScriptException;
 
@@ -60,7 +60,7 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class JavascriptRuntime implements RuntimeController
+public class JavascriptRuntime implements ScriptRuntime
 {
 	static Set<JavascriptRuntime> runningRuntimes = new HashSet<>();
 

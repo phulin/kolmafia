@@ -33,13 +33,13 @@
 
 package net.sourceforge.kolmafia.textui.parsetree;
 
-import net.sourceforge.kolmafia.textui.RuntimeController;
+import net.sourceforge.kolmafia.textui.ScriptRuntime;
 
 public class LoopContinue
 	extends ScriptState
 {
 	public LoopContinue()
 	{
-		super( RuntimeController.State.CONTINUE );
+		super( ScriptRuntime.State.CONTINUE );
 	}
 }

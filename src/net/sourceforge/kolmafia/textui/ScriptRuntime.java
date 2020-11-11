@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 
 import net.sourceforge.kolmafia.request.RelayRequest;
 
-public interface RuntimeController
+public interface ScriptRuntime
 {
 	public enum State
 	{

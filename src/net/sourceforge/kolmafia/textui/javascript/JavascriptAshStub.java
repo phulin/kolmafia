@@ -9,7 +9,7 @@ import org.mozilla.javascript.Scriptable;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Parser;
-import net.sourceforge.kolmafia.textui.RuntimeController;
+import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
 import net.sourceforge.kolmafia.textui.parsetree.Function;
 import net.sourceforge.kolmafia.textui.parsetree.LibraryFunction;
@@ -18,10 +18,10 @@ import net.sourceforge.kolmafia.textui.parsetree.Function.MatchType;
 
 public class JavascriptAshStub extends BaseFunction
 {
-	private RuntimeController controller;
+	private ScriptRuntime controller;
 	private String ashFunctionName;
 	
-	public JavascriptAshStub( RuntimeController controller, String ashFunctionName )
+	public JavascriptAshStub( ScriptRuntime controller, String ashFunctionName )
 	{
 		this.controller = controller;
 		this.ashFunctionName = ashFunctionName;

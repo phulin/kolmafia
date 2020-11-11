@@ -38,7 +38,7 @@ import net.sourceforge.kolmafia.KoLConstants.MafiaState;
 import net.sourceforge.kolmafia.KoLmafia;
 import net.sourceforge.kolmafia.StaticEntity;
 
-import net.sourceforge.kolmafia.textui.Interpreter;
+import net.sourceforge.kolmafia.textui.AshRuntime;
 
 import net.sourceforge.kolmafia.utilities.ByteArrayStream;
 
@@ -81,7 +81,7 @@ public class AshMultiLineCommand
 			return;
 		}
 
-		Interpreter interpreter = new Interpreter();
+		AshRuntime interpreter = new AshRuntime();
 		interpreter.validate( null, ostream.getByteArrayInputStream() );
 
 		try

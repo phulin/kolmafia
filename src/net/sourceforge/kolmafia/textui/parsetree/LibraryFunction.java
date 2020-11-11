@@ -40,8 +40,8 @@ import net.sourceforge.kolmafia.KoLmafia;
 import net.sourceforge.kolmafia.RequestLogger;
 import net.sourceforge.kolmafia.StaticEntity;
 
-import net.sourceforge.kolmafia.textui.Interpreter;
-import net.sourceforge.kolmafia.textui.RuntimeController;
+import net.sourceforge.kolmafia.textui.AshRuntime;
+import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
 import net.sourceforge.kolmafia.textui.ScriptException;
 
@@ -56,7 +56,7 @@ public class LibraryFunction
 
 		Class[] args = new Class[ params.length + 1 ];
 
-		args[ 0 ] = RuntimeController.class;
+		args[ 0 ] = ScriptRuntime.class;
 
 		// Make a list of VariableReferences, even though the library
 		// function will not use them, so that tracing works
@@ -81,11 +81,11 @@ public class LibraryFunction
 	}
 
 	@Override
-	public Value execute( final Interpreter interpreter, Object[] values )
+	public Value execute( final AshRuntime interpreter, Object[] values )
 	{
 		if ( !KoLmafia.permitsContinue() )
 		{
-			interpreter.setState( RuntimeController.State.EXIT );
+			interpreter.setState( ScriptRuntime.State.EXIT );
 			return null;
 		}
 
@@ -130,7 +130,7 @@ public class LibraryFunction
 	}
 
 	// This is necessary for calls into the runtime library from other languages.
-	public Value executeWithoutInterpreter( RuntimeController controller, Object[] values )
+	public Value executeWithoutInterpreter( ScriptRuntime controller, Object[] values )
 	{
 		if ( StaticEntity.isDisabled( this.getName() ) )
 		{

@@ -59,7 +59,7 @@ import net.sourceforge.kolmafia.preferences.Preferences;
 
 import net.sourceforge.kolmafia.request.LoginRequest;
 
-import net.sourceforge.kolmafia.textui.RuntimeController;
+import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.command.*;
 
 import net.sourceforge.kolmafia.utilities.CharacterEntities;
@@ -317,7 +317,7 @@ public class KoLmafiaCLI
 		this.executeLine( line, null );
 	}
 
-	public void executeLine( String line, final RuntimeController controller )
+	public void executeLine( String line, final ScriptRuntime controller )
 	{
 		if ( line == null || KoLmafia.refusesContinue() )
 		{
@@ -539,7 +539,7 @@ public class KoLmafiaCLI
 		this.executeCommand( command, parameters, null );
 	}
 
-	private void executeCommand( String command, String parameters, RuntimeController caller )
+	private void executeCommand( String command, String parameters, ScriptRuntime caller )
 	{
 		Integer requestId = RequestThread.openRequestSequence();
 
@@ -557,7 +557,7 @@ public class KoLmafiaCLI
 		}
 	}
 
-	private void doExecuteCommand( String command, String parameters, RuntimeController caller )
+	private void doExecuteCommand( String command, String parameters, ScriptRuntime caller )
 	{
 		String lcommand = command.toLowerCase();
 
