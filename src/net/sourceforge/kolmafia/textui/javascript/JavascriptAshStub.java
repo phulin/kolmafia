@@ -7,12 +7,12 @@ import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
 import net.sourceforge.kolmafia.textui.parsetree.Function;
 import net.sourceforge.kolmafia.textui.parsetree.LibraryFunction;
+import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 import net.sourceforge.kolmafia.textui.parsetree.Function.MatchType;
 
@@ -82,8 +82,19 @@ public class JavascriptAshStub extends BaseFunction
 		List<Object> ashArgsWithInterpreter = new ArrayList<Object>();
 		ashArgsWithInterpreter.add(controller);
 		ashArgsWithInterpreter.addAll(ashArgs);
-		Value returnValue = ashFunction.executeWithoutInterpreter( controller, ashArgsWithInterpreter.toArray() );
+		Value ashReturnValue = ashFunction.executeWithoutInterpreter( controller, ashArgsWithInterpreter.toArray() );
 
-		return Value.asJava( returnValue );
+		Object returnValue = Value.asJava( ashReturnValue );
+
+		if ( returnValue instanceof ProxyRecordValue )
+		{
+			returnValue = new ProxyRecordValueWrapper(returnValue.getClass(), (ProxyRecordValue) returnValue);
+		}
+		else if ( !( returnValue instanceof Scriptable ) )
+		{
+			returnValue = Context.javaToJS(returnValue, scope);
+		}
+
+		return returnValue;
 	}
 }

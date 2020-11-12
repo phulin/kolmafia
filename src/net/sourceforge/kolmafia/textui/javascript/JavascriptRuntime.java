@@ -38,8 +38,9 @@ import net.sourceforge.kolmafia.KoLmafia;
 import net.sourceforge.kolmafia.RequestLogger;
 import net.sourceforge.kolmafia.preferences.Preferences;
 import net.sourceforge.kolmafia.request.RelayRequest;
-import net.sourceforge.kolmafia.textui.parsetree.Function;
 import net.sourceforge.kolmafia.textui.parsetree.LibraryFunction;
+import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
+import net.sourceforge.kolmafia.textui.parsetree.RecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.textui.ScriptRuntime;
@@ -49,6 +50,8 @@ import net.sourceforge.kolmafia.textui.ScriptException;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.EcmaError;
 import org.mozilla.javascript.EvaluatorException;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -57,6 +60,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -70,156 +74,204 @@ public class JavascriptRuntime implements ScriptRuntime
 
 	private State runtimeState = State.EXIT;
 
-    // For relay scripts.
+	// For relay scripts.
 	private RelayRequest relayRequest = null;
 	private StringBuffer serverReplyBuffer = null;
 
-    private LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched;
-    
-    public static String toCamelCase( String name )
-    {
-        if ( name == null )
-        {
-            return null;
-        }
+	private LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched;
+	
+	public static String toCamelCase( String name )
+	{
+		if ( name == null )
+		{
+			return null;
+		}
 
-        boolean first = true;
-        StringBuilder result = new StringBuilder();
-        for ( String word : name.split( "_" ) )
-        {
-            if ( first )
-            {
-                result.append( word.charAt( 0 ) );
-                first = false;
-            }
-            else
-            {
-                result.append( Character.toUpperCase( word.charAt( 0 ) ) );
-            }
-            result.append( word.substring( 1 ) );
-        }
+		boolean first = true;
+		StringBuilder result = new StringBuilder();
+		for ( String word : name.split( "_" ) )
+		{
+			if ( first )
+			{
+				result.append( word.charAt( 0 ) );
+				first = false;
+			}
+			else
+			{
+				result.append( Character.toUpperCase( word.charAt( 0 ) ) );
+			}
+			result.append( word.substring( 1 ) );
+		}
 
-        return result.toString();
-    }
+		return result.toString();
+	}
 	
 	public JavascriptRuntime( File scriptFile )
 	{
 		this.scriptFile = scriptFile;
 	}
-    
-    public void execute()
-    {
-        Context cx = Context.enter();
-        runningRuntimes.add( this );
+	
+	private void initRuntimeLibrary( Context cx, Scriptable scope )
+	{
+		Scriptable stdLib = cx.newObject(scope);
+		Set<String> functionNameSet = new TreeSet<>();
+		for ( net.sourceforge.kolmafia.textui.parsetree.Function libraryFunction : RuntimeLibrary.functions )
+		{
+			functionNameSet.add(libraryFunction.getName());
+		}
+		for ( String libraryFunctionName : functionNameSet )
+		{
+			ScriptableObject.putProperty( stdLib, toCamelCase( libraryFunctionName ),
+				new JavascriptAshStub( this, libraryFunctionName ) );
+		}
+		ScriptableObject.putProperty( scope, "Lib", stdLib );
+	}
 
-        try
-        {
-            Scriptable scope = cx.initSafeStandardObjects();
+	private static void initProxyRecordValueType( Context cx, Scriptable scope, Class recordValueClass )
+	{
+		String shortName = recordValueClass.getSimpleName().replace( "Proxy", "" );
+		Class[] argumentTypes = {};
+		FunctionObject constructor = null;
+		try
+		{
+			constructor = new FunctionObject( shortName, ProxyRecordValueWrapper.class.getMethod("construct", argumentTypes), scope );
+		}
+		catch (Exception e) { System.out.println(e.getClass().getName() + "\n" + e.getMessage()); }
+		finally {}
 
-            FileReader f = new FileReader( scriptFile );
+		ScriptableObject prototype = (ScriptableObject) cx.newObject(scope);
+		for ( Method method : recordValueClass.getDeclaredMethods() )
+		{
+			ProxyRecordMethodWrapper methodWrapper = new ProxyRecordMethodWrapper( recordValueClass, method );
+			String methodShortName = toCamelCase( method.getName().replace( "get_", "" ) );
+			prototype.setGetterOrSetter( methodShortName, 0, methodWrapper, false );
+		}
+		constructor.addAsConstructor( scope, prototype );
+		ScriptableObject.putProperty(scope, shortName, constructor);
+	}
 
-			Scriptable stdLib = cx.newObject(scope);
-			Set<String> functionNameSet = new TreeSet<>();
-			for ( Function libraryFunction : RuntimeLibrary.functions )
+	private static void initProxyRecordValueTypes( Context cx, Scriptable scope )
+	{
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.BountyProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.ClassProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.CoinmasterProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.EffectProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.ElementProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.FamiliarProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.ItemProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.LocationProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.MonsterProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.PhylumProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.ServantProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.SkillProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.ThrallProxy.class );
+		initProxyRecordValueType( cx, scope, ProxyRecordValue.VykeaProxy.class );
+	}
+
+	public void execute()
+	{
+		Context cx = Context.enter();
+		runningRuntimes.add( this );
+
+		try
+		{
+			Scriptable scope = cx.initSafeStandardObjects();
+
+			initRuntimeLibrary(cx, scope);
+			initProxyRecordValueTypes(cx, scope);
+
+			FileReader scriptFileReader = new FileReader( scriptFile );
+
+			try
 			{
-				functionNameSet.add(libraryFunction.getName());
-			}
-			for ( String libraryFunctionName : functionNameSet )
-			{
-				ScriptableObject.putProperty( stdLib, toCamelCase( libraryFunctionName ), new JavascriptAshStub( this, libraryFunctionName ) );
-			}
-            ScriptableObject.putProperty( scope, "Lib", stdLib );
-
-            try
-            {
 				setState(State.NORMAL);
-                cx.evaluateReader( scope, f, scriptFile.getName(), 0, null );
+				cx.evaluateReader( scope, scriptFileReader, scriptFile.getName(), 0, null );
 				Object mainFunction = scope.get( "main", scope );
-				if (mainFunction instanceof org.mozilla.javascript.Function)
+				if (mainFunction instanceof Function)
 				{
-					Object result = ( (org.mozilla.javascript.Function) mainFunction ).call( cx, scope, cx.newObject(scope), null );
+					Object result = ( (Function) mainFunction ).call( cx, scope, cx.newObject(scope), null );
 					System.out.println( Context.jsToJava( result, boolean.class ) );
 				}
-            }
-            catch ( EvaluatorException e )
-            {
-                KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript evaluator exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
-            }
-            catch ( EcmaError e )
-            {
-                KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript error: " + e.getErrorMessage() + "\n" + e.getScriptStackTrace() ); 
-            }
-            catch ( JavaScriptException e )
-            {
-                KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
-            }
-            finally
-            {
+			}
+			catch ( EvaluatorException e )
+			{
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript evaluator exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
+			}
+			catch ( EcmaError e )
+			{
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript error: " + e.getErrorMessage() + "\n" + e.getScriptStackTrace() ); 
+			}
+			catch ( JavaScriptException e )
+			{
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
+			}
+			finally
+			{
 				setState(State.EXIT);
-                f.close();
-            }
-        }
-        catch ( FileNotFoundException e )
-        {
-            KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "File not found" );
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JS file I/O error" );
-        }
-        finally
-        {
-            runningRuntimes.remove( this );
-            Context.exit();
-        }
-    }
+				scriptFileReader.close();
+			}
+		}
+		catch ( FileNotFoundException e )
+		{
+			KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "File not found" );
+		}
+		catch ( IOException e )
+		{
+			e.printStackTrace();
+			KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JS file I/O error" );
+		}
+		finally
+		{
+			runningRuntimes.remove( this );
+			Context.exit();
+		}
+	}
 
-    @Override
+	@Override
 	public ScriptException runtimeException( final String message )
-    {
-        return new ScriptException( Context.reportRuntimeError(message).getMessage() );
-    }
+	{
+		return new ScriptException( Context.reportRuntimeError(message).getMessage() );
+	}
 
-    @Override
-    public ScriptException runtimeException2(final String message1, final String message2)
-    {
-        return new ScriptException( Context.reportRuntimeError(message1 + " " + message2).getMessage() );
-    }
+	@Override
+	public ScriptException runtimeException2(final String message1, final String message2)
+	{
+		return new ScriptException( Context.reportRuntimeError(message1 + " " + message2).getMessage() );
+	}
 
-    @Override
+	@Override
 	public RelayRequest getRelayRequest()
 	{
-        return relayRequest;
-    }
+		return relayRequest;
+	}
 
-    @Override
+	@Override
 	public StringBuffer getServerReplyBuffer()
 	{
-        return serverReplyBuffer;
-    }
+		return serverReplyBuffer;
+	}
 
-    @Override
+	@Override
 	public State getState()
 	{
-        return runtimeState;
-    }
+		return runtimeState;
+	}
 
-    @Override
+	@Override
 	public void setState(final State newState)
 	{
 		runtimeState = newState;
 	}
 
-    @Override
+	@Override
 	public LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> getBatched()
 	{
-        return batched;
-    }
+		return batched;
+	}
 
-    @Override
-    public void setBatched( LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched )
-    {
+	@Override
+	public void setBatched( LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched )
+	{
 		this.batched = batched;
-    }
+	}
 }
