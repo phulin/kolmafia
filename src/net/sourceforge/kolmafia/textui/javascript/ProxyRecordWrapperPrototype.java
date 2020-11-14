@@ -100,12 +100,14 @@ public class ProxyRecordWrapperPrototype
 			Method constructorMethod = ProxyRecordWrapper.class.getDeclaredMethod( "constructDefaultValue", new Class[] {} );
 			FunctionObject constructor = new FunctionObject( getClassName(), constructorMethod, scope );
 			constructor.addAsConstructor( scope, this );
+			constructor.sealObject();
 
 			for ( String methodName : new String[] { "toString", "valueOf" } )
 			{
 				Method method = ProxyRecordWrapper.class.getDeclaredMethod( methodName, new Class[] {} );
 				FunctionObject functionObject = new FunctionObject( methodName, method, scope );
 				defineProperty( methodName, functionObject, DONTENUM | READONLY | PERMANENT );
+				functionObject.sealObject();
 			}
 		}
 		catch ( NoSuchMethodException e )

@@ -4059,7 +4059,7 @@ public abstract class RuntimeLibrary
 		int arg1Value = (int) arg1.intValue();
 		int arg2Value = (int) arg2.intValue();
 
-		boolean countThenItem = arg1.getType().equals( DataTypes.INT_TYPE );
+		boolean countThenItem = arg1.getType().equals( DataTypes.INT_TYPE ) || arg1.getType().equals( DataTypes.FLOAT_TYPE );
 
 		int count = countThenItem ? arg1Value : arg2Value;
 		int item = countThenItem ? arg2Value : arg1Value;

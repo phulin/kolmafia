@@ -41,7 +41,10 @@ import net.sourceforge.kolmafia.request.RelayRequest;
 import net.sourceforge.kolmafia.textui.parsetree.LibraryFunction;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.RecordValue;
+import net.sourceforge.kolmafia.textui.parsetree.Type;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
+import net.sourceforge.kolmafia.textui.parsetree.VariableReference;
+import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
@@ -61,8 +64,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -118,6 +123,15 @@ public class JavascriptRuntime
 		Set<String> functionNameSet = new TreeSet<>();
 		for ( net.sourceforge.kolmafia.textui.parsetree.Function libraryFunction : RuntimeLibrary.functions )
 		{
+			// Blacklist a number of types.
+			List<Type> allTypes = new ArrayList<>();
+			allTypes.add( libraryFunction.getType() );
+			for ( VariableReference variableReference : libraryFunction.getVariableReferences() )
+			{
+				allTypes.add( variableReference.getType() );
+			}
+			if ( allTypes.contains( DataTypes.MATCHER_TYPE ) ) continue;
+
 			functionNameSet.add(libraryFunction.getName());
 		}
 		for ( String libraryFunctionName : functionNameSet )

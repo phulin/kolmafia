@@ -37,11 +37,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.mozilla.javascript.BaseFunction;
-import org.mozilla.javascript.Callable;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
-
-import net.sourceforge.kolmafia.textui.parsetree.Value;
 
 public class ProxyRecordMethodWrapper extends BaseFunction
 {
