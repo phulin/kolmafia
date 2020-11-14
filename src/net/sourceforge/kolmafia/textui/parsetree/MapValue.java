@@ -60,6 +60,12 @@ public class MapValue
 			new TreeMap<Value,Value>();
 	}
 
+	public MapValue( final AggregateType type, Map<?, ?> value )
+	{
+		super( type );
+		this.content = value;
+	}
+
 	@SuppressWarnings("unchecked") 
 	private Map<Value,Value> getMap()
 	{

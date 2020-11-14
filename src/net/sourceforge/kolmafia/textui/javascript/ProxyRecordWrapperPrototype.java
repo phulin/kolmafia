@@ -90,7 +90,7 @@ public class ProxyRecordWrapperPrototype
 
 		for ( Method method : recordValueClass.getDeclaredMethods() )
 		{
-			ProxyRecordMethodWrapper methodWrapper = new ProxyRecordMethodWrapper( recordValueClass, method );
+			ProxyRecordMethodWrapper methodWrapper = new ProxyRecordMethodWrapper( method );
 			String methodShortName = JavascriptRuntime.toCamelCase( method.getName().replace( "get_", "" ) );
 			setGetterOrSetter( methodShortName, 0, methodWrapper, false );
 		}

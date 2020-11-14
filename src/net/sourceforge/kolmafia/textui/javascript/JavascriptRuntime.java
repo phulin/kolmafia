@@ -35,17 +35,11 @@ package net.sourceforge.kolmafia.textui.javascript;
 
 import net.sourceforge.kolmafia.KoLConstants;
 import net.sourceforge.kolmafia.KoLmafia;
-import net.sourceforge.kolmafia.RequestLogger;
-import net.sourceforge.kolmafia.preferences.Preferences;
 import net.sourceforge.kolmafia.request.RelayRequest;
-import net.sourceforge.kolmafia.textui.parsetree.LibraryFunction;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
-import net.sourceforge.kolmafia.textui.parsetree.RecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Type;
-import net.sourceforge.kolmafia.textui.parsetree.Value;
 import net.sourceforge.kolmafia.textui.parsetree.VariableReference;
 import net.sourceforge.kolmafia.textui.DataTypes;
-import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
 import net.sourceforge.kolmafia.textui.ScriptException;
@@ -54,7 +48,6 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.EcmaError;
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.Function;
-import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -63,7 +56,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -164,7 +156,7 @@ public class JavascriptRuntime
 	{
 		for ( Class<?> proxyRecordValueClass : ProxyRecordValue.class.getDeclaredClasses() )
 		{
-			if ( !proxyRecordValueClass.getSimpleName().endsWith("Proxy") )
+			if ( !proxyRecordValueClass.getSimpleName().endsWith( "Proxy" ) )
 			{
 				continue;
 			}
@@ -175,6 +167,7 @@ public class JavascriptRuntime
 	public void execute()
 	{
 		Context cx = Context.enter();
+		cx.setLanguageVersion( Context.VERSION_ES6 );
 		runningRuntimes.add( this );
 
 		try
@@ -191,7 +184,7 @@ public class JavascriptRuntime
 				setState(State.NORMAL);
 				cx.evaluateReader( scope, scriptFileReader, scriptFile.getName(), 0, null );
 				Object mainFunction = scope.get( "main", scope );
-				if (mainFunction instanceof Function)
+				if ( mainFunction instanceof Function )
 				{
 					Object result = ( (Function) mainFunction ).call( cx, scope, cx.newObject(scope), null );
 					System.out.println( Context.jsToJava( result, boolean.class ) );

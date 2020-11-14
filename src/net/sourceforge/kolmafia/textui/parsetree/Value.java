@@ -37,11 +37,16 @@ import java.io.PrintStream;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Map.Entry;
 
 import net.sourceforge.kolmafia.KoLConstants;
+import net.sourceforge.kolmafia.KoLmafia;
+import net.sourceforge.kolmafia.KoLmafiaCLI;
 import net.sourceforge.kolmafia.RequestLogger;
 import net.sourceforge.kolmafia.VYKEACompanionData;
-
+import net.sourceforge.kolmafia.KoLConstants.MafiaState;
 import net.sourceforge.kolmafia.persistence.EffectDatabase;
 import net.sourceforge.kolmafia.persistence.ItemDatabase;
 import net.sourceforge.kolmafia.persistence.MonsterDatabase;
@@ -55,6 +60,8 @@ import net.sourceforge.kolmafia.utilities.StringUtilities;
 
 import org.json.JSONException;
 import org.mozilla.javascript.ConsString;
+import org.mozilla.javascript.NativeMap;
+import org.mozilla.javascript.NativeObject;
 
 public class Value
 	extends ParseTreeNode
@@ -607,6 +614,17 @@ public class Value
 		}
 	}
 
+	private static NativeObject asNativeObject( MapValue mapValue )
+	{
+		NativeObject result = new NativeObject();
+		for ( Value key : mapValue.keys() )
+		{
+			Value value = mapValue.aref( key );
+			result.put( key, value );
+		}
+		return result;
+	}
+
 	public Object toJava()
 	{
 		if ( this.getType().equals( DataTypes.VOID_TYPE ) )
@@ -635,25 +653,99 @@ public class Value
 		}
 		else if ( this.getType().equals( DataTypes.MATCHER_TYPE ) )
 		{
-			return this.content;
+			// This should not happen.
+			return null;
 		}
-		else if ( this.getType().equals( DataTypes.AGGREGATE_TYPE ) )
+		else if ( this instanceof MapValue )
 		{
-			return this.content;
+			return asNativeObject( (MapValue) this );
 		}
 		else
 		{
+			// record type, ...?
 			return this;
 		}
 	}
 
-	public static Object asJava(Value value)
+	public static Object asJava( Value value )
 	{
 		if ( value == null ) return null;
 		else return value.toJava();
 	}
 
-	public static Value fromJava(Object object)
+	private static Value coerce( Value value, Type targetType )
+	{
+		Type valueType = value.getType();
+		if ( targetType.equals( valueType ) )
+		{
+			return value;
+		}
+		else if ( targetType.equals( DataTypes.TYPE_STRING ) )
+		{
+			return value.toStringValue();
+		}
+		else if ( targetType.equals( DataTypes.TYPE_INT ) &&
+			valueType.equals( DataTypes.TYPE_FLOAT ) )
+		{
+			return value.toIntValue();
+		}
+		else if ( targetType.equals( DataTypes.TYPE_FLOAT ) &&
+			valueType.equals( DataTypes.TYPE_INT ) )
+		{
+			return value.toFloatValue();
+		}
+		else
+		{
+			return null;
+		}
+	}
+
+	private static MapValue convertNativeObject( NativeObject nativeObject )
+	{
+		if ( nativeObject.size() == 0 )
+		{
+			// FIXME: Return an empty aggregate, but with what type? Take a type hint.
+			return null;
+		}
+
+		Type dataType = null;
+		Type indexType = null;
+		for ( Entry<?, ?> entry : nativeObject.entrySet() )
+		{
+			dataType = fromJava( entry.getValue() ).getType();
+			indexType = fromJava( entry.getKey() ).getType();
+			if ( indexType.equals( DataTypes.TYPE_FLOAT ) )
+			{
+				// Convert float index to int, since it doesn't make sense in JS anyway.
+				indexType = DataTypes.INT_TYPE;
+			}
+			break;
+		}
+
+		Map<Value, Value> underlyingMap = new TreeMap<Value, Value>();
+		for ( Entry<?, ?> entry : nativeObject.entrySet() )
+		{
+			Value key = fromJava( entry.getKey() );
+			Value value = fromJava( entry.getValue() );
+
+			Value keyCoerced = coerce( key, indexType );
+			Value valueCoerced = coerce( value, dataType.getBaseType() );
+
+			if ( keyCoerced != null && valueCoerced != null )
+			{
+				underlyingMap.put( keyCoerced, valueCoerced );
+			}
+			else
+			{
+				// FIXME: Thread state through so we can throw an exception here instead.
+				KoLmafia.updateDisplay( MafiaState.ERROR, "Failed to insert value into map." );
+			}
+		}
+
+		return new MapValue( new AggregateType( dataType, indexType ), underlyingMap );
+	}
+
+	public static Value fromJava( Object object )
 	{
 		if ( object == null ) return null;
 		else if ( object instanceof Boolean )
@@ -683,6 +775,10 @@ public class Value
 		else if ( object instanceof ProxyRecordWrapper )
 		{
 			return ((ProxyRecordWrapper) object).getWrapped();
+		}
+		else if ( object instanceof NativeObject )
+		{
+			return convertNativeObject( (NativeObject) object );
 		}
 		else
 		{

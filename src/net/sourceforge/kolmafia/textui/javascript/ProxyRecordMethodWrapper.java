@@ -42,12 +42,10 @@ import org.mozilla.javascript.Scriptable;
 
 public class ProxyRecordMethodWrapper extends BaseFunction
 {
-	private Class<?> clazz;
 	private Method method;
 
-	public ProxyRecordMethodWrapper( Class<?> clazz, Method method )
+	public ProxyRecordMethodWrapper( Method method )
 	{
-		this.clazz = clazz;
 		this.method = method;
 	}
 
