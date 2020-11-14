@@ -195,6 +195,10 @@ public class JavascriptRuntime
 			{
 				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
 			}
+			catch ( ScriptException e )
+			{
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "Script exception: " + e.getMessage() );
+			}
 			finally
 			{
 				setState(State.EXIT);

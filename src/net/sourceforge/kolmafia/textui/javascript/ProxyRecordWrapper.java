@@ -33,46 +33,54 @@
 
 package net.sourceforge.kolmafia.textui.javascript;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
-import org.mozilla.javascript.BaseFunction;
-import org.mozilla.javascript.Callable;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
+import net.sourceforge.kolmafia.textui.DataTypes;
+import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 
-public class ProxyRecordMethodWrapper extends BaseFunction
+public class ProxyRecordWrapper
+	extends ScriptableObject
 {
-	private Class<?> clazz;
-	private Method method;
+	private Class<?> recordValueClass;
+	// NB: This wrapped value is NOT the proxy record type version.
+	// Instead, it's the plain value that can be turned into a proxy record via asProxy.
+	private Value wrapped;
 
-	public ProxyRecordMethodWrapper( Class<?> clazz, Method method )
+	public ProxyRecordWrapper( Class<?> recordValueClass, Value wrapped )
 	{
-		this.clazz = clazz;
-		this.method = method;
+		this.recordValueClass = recordValueClass;
+		this.wrapped = wrapped;
+		setPrototype( ProxyRecordWrapperPrototype.getPrototypeInstance( Context.getCurrentContext(), recordValueClass ) );
+		sealObject();
+	}
+
+	public Value getWrapped()
+	{
+		return wrapped;
 	}
 
 	@Override
-	public Object call( Context cx, Scriptable scope, Scriptable thisObj, Object[] args )
+	public String getClassName()
 	{
-		if ( !( thisObj instanceof ProxyRecordWrapper ) )
-		{
-			return null;
-		}
+		return recordValueClass.getName();
+	}
 
-		try
-		{
-			return method.invoke( ((ProxyRecordWrapper) thisObj).getWrapped().asProxy() );
-		}
-		catch ( IllegalAccessException e )
-		{
-			return null;
-		}
-		catch ( InvocationTargetException e )
-		{
-			return null;
-		}
+	@Override
+	public String toString()
+	{
+		return wrapped.toString();
+	}
+
+	public long valueOf()
+	{
+		return wrapped.contentLong;
+	}
+
+	public static Object constructDefaultValue()
+	{
+		return new ProxyRecordWrapper( ProxyRecordValue.ItemProxy.class,
+			new ProxyRecordValue.ItemProxy( DataTypes.makeIntValue( 1 ) ) );
 	}
 }

@@ -643,7 +643,7 @@ public class Value
 		}
 		else
 		{
-			return this.asProxy();
+			return this;
 		}
 	}
 
