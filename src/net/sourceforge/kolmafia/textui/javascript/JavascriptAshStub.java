@@ -88,7 +88,7 @@ public class JavascriptAshStub extends BaseFunction
 
 		if ( returnValue instanceof ProxyRecordValue )
 		{
-			returnValue = new ProxyRecordValueWrapper(returnValue.getClass(), (ProxyRecordValue) returnValue);
+			returnValue = new ProxyRecordWrapper(returnValue.getClass(), (ProxyRecordValue) returnValue);
 		}
 		else if ( !( returnValue instanceof Scriptable ) )
 		{

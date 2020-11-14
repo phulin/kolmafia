@@ -66,7 +66,8 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class JavascriptRuntime implements ScriptRuntime
+public class JavascriptRuntime
+	implements ScriptRuntime
 {
 	static Set<JavascriptRuntime> runningRuntimes = new HashSet<>();
 
@@ -127,45 +128,34 @@ public class JavascriptRuntime implements ScriptRuntime
 		ScriptableObject.putProperty( scope, "Lib", stdLib );
 	}
 
-	private static void initProxyRecordValueType( Context cx, Scriptable scope, Class recordValueClass )
+	private static void initProxyRecordValueType( Context cx, Scriptable scope, Class<?> recordValueClass )
 	{
-		String shortName = recordValueClass.getSimpleName().replace( "Proxy", "" );
-		Class[] argumentTypes = {};
-		FunctionObject constructor = null;
-		try
-		{
-			constructor = new FunctionObject( shortName, ProxyRecordValueWrapper.class.getMethod("construct", argumentTypes), scope );
-		}
-		catch (Exception e) { System.out.println(e.getClass().getName() + "\n" + e.getMessage()); }
-		finally {}
-
-		ScriptableObject prototype = (ScriptableObject) cx.newObject(scope);
-		for ( Method method : recordValueClass.getDeclaredMethods() )
-		{
-			ProxyRecordMethodWrapper methodWrapper = new ProxyRecordMethodWrapper( recordValueClass, method );
-			String methodShortName = toCamelCase( method.getName().replace( "get_", "" ) );
-			prototype.setGetterOrSetter( methodShortName, 0, methodWrapper, false );
-		}
-		constructor.addAsConstructor( scope, prototype );
-		ScriptableObject.putProperty(scope, shortName, constructor);
+		ProxyRecordWrapperPrototype prototype = new ProxyRecordWrapperPrototype( recordValueClass );
+		prototype.initToScope( cx, scope );
 	}
 
 	private static void initProxyRecordValueTypes( Context cx, Scriptable scope )
 	{
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.BountyProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.ClassProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.CoinmasterProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.EffectProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.ElementProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.FamiliarProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.ItemProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.LocationProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.MonsterProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.PhylumProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.ServantProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.SkillProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.ThrallProxy.class );
-		initProxyRecordValueType( cx, scope, ProxyRecordValue.VykeaProxy.class );
+		for ( Class<?> proxyRecordValueClass : ProxyRecordValue.class.getDeclaredClasses() )
+		{
+			if ( !proxyRecordValueClass.getSimpleName().endsWith("Proxy") )
+			{
+				continue;
+			}
+			initProxyRecordValueType( cx, scope, proxyRecordValueClass );
+		}
+	}
+
+	private static void cleanupProxyRecordValueTypes( Context cx )
+	{
+		for ( Class<?> proxyRecordValueClass : ProxyRecordValue.class.getDeclaredClasses() )
+		{
+			if ( !proxyRecordValueClass.getSimpleName().endsWith("Proxy") )
+			{
+				continue;
+			}
+			ProxyRecordWrapperPrototype.cleanup( cx, proxyRecordValueClass );
+		}
 	}
 
 	public void execute()
@@ -223,6 +213,7 @@ public class JavascriptRuntime implements ScriptRuntime
 		finally
 		{
 			runningRuntimes.remove( this );
+			cleanupProxyRecordValueTypes( cx );
 			Context.exit();
 		}
 	}

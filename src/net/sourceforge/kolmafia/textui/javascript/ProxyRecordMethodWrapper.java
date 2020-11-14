@@ -36,19 +36,18 @@ package net.sourceforge.kolmafia.textui.javascript;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Callable;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import net.sourceforge.kolmafia.textui.parsetree.RecordValue;
+import net.sourceforge.kolmafia.textui.parsetree.Value;
 
 public class ProxyRecordMethodWrapper implements Callable {
 
-	private Class clazz;
+	private Class<?> clazz;
 	private Method method;
 
-	public ProxyRecordMethodWrapper( Class clazz, Method method )
+	public ProxyRecordMethodWrapper( Class<?> clazz, Method method )
 	{
 		this.clazz = clazz;
 		this.method = method;
@@ -57,9 +56,14 @@ public class ProxyRecordMethodWrapper implements Callable {
 	@Override
 	public Object call( Context cx, Scriptable scope, Scriptable thisObj, Object[] args )
 	{
+		if ( !( thisObj instanceof ProxyRecordWrapper ) )
+		{
+			return null;
+		}
+
 		try
 		{
-			return method.invoke( ((ProxyRecordValueWrapper) thisObj).getWrapped() );
+			return Value.fromJava( method.invoke( ((ProxyRecordWrapper) thisObj).getWrapped() ) );
 		}
 		catch ( IllegalAccessException e )
 		{

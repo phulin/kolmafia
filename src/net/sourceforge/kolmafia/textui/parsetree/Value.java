@@ -50,7 +50,7 @@ import net.sourceforge.kolmafia.persistence.SkillDatabase;
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.AshRuntime;
 import net.sourceforge.kolmafia.textui.Parser;
-
+import net.sourceforge.kolmafia.textui.javascript.ProxyRecordWrapper;
 import net.sourceforge.kolmafia.utilities.StringUtilities;
 
 import org.json.JSONException;
@@ -679,6 +679,10 @@ public class Value
 		else if ( object instanceof ProxyRecordValue )
 		{
 			return (ProxyRecordValue) object;
+		}
+		else if ( object instanceof ProxyRecordWrapper )
+		{
+			return ((ProxyRecordWrapper) object).getWrapped();
 		}
 		else
 		{
