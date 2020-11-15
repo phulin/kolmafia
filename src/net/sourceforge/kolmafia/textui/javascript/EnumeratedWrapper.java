@@ -132,6 +132,8 @@ public class EnumeratedWrapper
 		String typeName = (String) ScriptableObject.getProperty( functionObject, "typeName" );
 		Type type = DataTypes.simpleTypes.find( typeName );
 
+		Scriptable scope = ScriptableObject.getTopLevelScope( thisObject );
+
 		Object arg = args[0];
 		if ( arg instanceof Iterable )
 		{
@@ -140,7 +142,7 @@ public class EnumeratedWrapper
 			{
 				result.add( getOne( type, key ) );
 			}
-			return new NativeArray( result.toArray() );
+			return cx.newArray( scope, result.toArray() );
 		}
 		else
 		{
