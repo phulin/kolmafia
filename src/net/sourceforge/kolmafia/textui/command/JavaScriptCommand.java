@@ -55,12 +55,12 @@ public class JavaScriptCommand
 		JavascriptRuntime runtime = new JavascriptRuntime( parameters );
 		Value returnValue = runtime.execute();
 
-		KoLmafia.updateDisplay( "Returned: " + returnValue );
-
 		if ( cmd.endsWith( "q" ) )
 		{
 			return;
 		}
+
+		KoLmafia.updateDisplay( "Returned: " + returnValue );
 
 		returnValue = Value.asProxy( returnValue );
 		if ( returnValue instanceof CompositeValue )
