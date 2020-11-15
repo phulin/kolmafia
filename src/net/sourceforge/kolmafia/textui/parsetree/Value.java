@@ -34,19 +34,13 @@
 package net.sourceforge.kolmafia.textui.parsetree;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
+
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import net.sourceforge.kolmafia.KoLConstants;
-import net.sourceforge.kolmafia.KoLmafia;
-import net.sourceforge.kolmafia.KoLmafiaCLI;
 import net.sourceforge.kolmafia.RequestLogger;
 import net.sourceforge.kolmafia.VYKEACompanionData;
-import net.sourceforge.kolmafia.KoLConstants.MafiaState;
 import net.sourceforge.kolmafia.persistence.EffectDatabase;
 import net.sourceforge.kolmafia.persistence.ItemDatabase;
 import net.sourceforge.kolmafia.persistence.MonsterDatabase;
@@ -55,15 +49,9 @@ import net.sourceforge.kolmafia.persistence.SkillDatabase;
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.AshRuntime;
 import net.sourceforge.kolmafia.textui.Parser;
-import net.sourceforge.kolmafia.textui.javascript.ProxyRecordWrapper;
 import net.sourceforge.kolmafia.utilities.StringUtilities;
 
 import org.json.JSONException;
-import org.mozilla.javascript.ConsString;
-import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeMap;
-import org.mozilla.javascript.NativeObject;
-import org.mozilla.javascript.ScriptableObject;
 
 public class Value
 	extends ParseTreeNode
