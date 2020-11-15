@@ -53,7 +53,7 @@ public class JavaScriptCommand
 	public void run( final String cmd, String parameters )
 	{
 		JavascriptRuntime runtime = new JavascriptRuntime( parameters );
-		Value returnValue = runtime.execute();
+		Value returnValue = runtime.execute( new String[] {} );
 
 		if ( cmd.endsWith( "q" ) )
 		{

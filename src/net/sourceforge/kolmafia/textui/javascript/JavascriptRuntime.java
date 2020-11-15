@@ -171,11 +171,17 @@ public class JavascriptRuntime
 		}
 	}
 
-	public Value execute()
+	public Value execute( String[] arguments )
 	{
+		// TODO: Support for requesting user arguments if missing.
 		Context cx = Context.enter();
 		cx.setLanguageVersion( Context.VERSION_ES6 );
 		runningRuntimes.add( this );
+
+		if ( arguments == null )
+		{
+			arguments = new String[] {};
+		}
 
 		try
 		{
@@ -230,7 +236,7 @@ public class JavascriptRuntime
 				Object mainFunction = scope.get( "main", scope );
 				if ( mainFunction instanceof Function )
 				{
-					returnValue = ( (Function) mainFunction ).call( cx, scope, cx.newObject(scope), null );
+					returnValue = ( (Function) mainFunction ).call( cx, scope, cx.newObject(scope), arguments );
 				}
 			}
 			catch ( EvaluatorException e )

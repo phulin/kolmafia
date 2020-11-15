@@ -270,11 +270,10 @@ public class CallScriptCommand
 				if ( !command.equals("call") )
 				{
 					KoLmafia.updateDisplay(
-						MafiaState.ERROR, "Cannot use command " + command + "with JavaScript scripts." );
+						MafiaState.ERROR, "Cannot use command " + command + " with JavaScript scripts." );
 				}
 				JavascriptRuntime runtime = new JavascriptRuntime( scriptFile );
-				// FIXME: Add arguments.
-				runtime.execute();
+				runtime.execute( arguments );
 			}
 			else
 			{
