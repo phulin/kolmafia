@@ -79,7 +79,7 @@ public class JavascriptRuntime
 	private StringBuffer serverReplyBuffer = null;
 
 	private LinkedHashMap<String, LinkedHashMap<String, StringBuilder>> batched;
-	
+
 	public static String toCamelCase( String name )
 	{
 		if ( name == null )

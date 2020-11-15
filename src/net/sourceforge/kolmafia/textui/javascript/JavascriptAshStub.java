@@ -38,6 +38,7 @@ import java.util.List;
 
 import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
@@ -50,7 +51,8 @@ import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 import net.sourceforge.kolmafia.textui.parsetree.Function.MatchType;
 
-public class JavascriptAshStub extends BaseFunction
+public class JavascriptAshStub
+	extends BaseFunction
 {
 	private ScriptRuntime controller;
 	private String ashFunctionName;
@@ -158,6 +160,11 @@ public class JavascriptAshStub extends BaseFunction
 		else if ( !( returnValue instanceof Scriptable ) )
 		{
 			returnValue = Context.javaToJS(returnValue, scope);
+		}
+
+		if ( returnValue instanceof NativeJavaObject )
+		{
+			throw controller.runtimeException( "ASH function returned native Java object." );
 		}
 
 		return returnValue;

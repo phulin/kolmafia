@@ -125,7 +125,7 @@ public class ValueCoercer {
 		}
 		else if ( value.getType().equals( DataTypes.BUFFER_TYPE ) )
 		{
-			return value.content;
+			return value.content.toString();
 		}
 		else if ( value.getType().equals( DataTypes.MATCHER_TYPE ) )
 		{
