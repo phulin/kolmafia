@@ -87,9 +87,9 @@ public class ValueConverter {
 		return result;
 	}
 
-	private NativeArray asNativeArray( ArrayValue arrayValue )
+	private Scriptable asNativeArray( ArrayValue arrayValue )
 	{
-		return new NativeArray(
+		return cx.newArray( scope,
 			Arrays.asList( (Value[]) arrayValue.content )
 				.stream()
 				.map( value -> asJava( value ) )

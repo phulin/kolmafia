@@ -158,9 +158,10 @@ public class EnumeratedWrapper
 		String typeName = (String) ScriptableObject.getProperty( functionObject, "typeName" );
 		Type type = DataTypes.simpleTypes.find( typeName );
 
-		ValueConverter coercer = new ValueConverter( cx, ScriptableObject.getTopLevelScope( thisObject ) );
+		Scriptable scope = ScriptableObject.getTopLevelScope( thisObject );
+		ValueConverter coercer = new ValueConverter( cx, scope );
 
-		return new NativeArray(
+		return cx.newArray( scope,
 			Arrays.asList( (Value[]) type.allValues().content )
 				.stream()
 				.map( value -> coercer.asJava( value ) )
