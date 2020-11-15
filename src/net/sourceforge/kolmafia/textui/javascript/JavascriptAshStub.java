@@ -40,6 +40,7 @@ import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
+import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
@@ -65,24 +66,9 @@ public class JavascriptAshStub extends BaseFunction
 	{
 		return JavascriptRuntime.toCamelCase( this.ashFunctionName );
 	}
-	
-	@Override
-	public Object call( Context cx, Scriptable scope, Scriptable thisObj, Object[] args )
+
+	private static Function findMatchingFunction( String ashFunctionName, List<Value> ashArgs )
 	{
-		ValueCoercer coercer = new ValueCoercer( controller, cx, scope );
-
-		// FIXME: Figure out what to do with 0-length arrays.
-		// Coerce arguments from Java to ASH values 
-		List<Value> ashArgs = new ArrayList<>();
-		for ( final Object o : args ) {
-			ashArgs.add( coercer.fromJava( o ) );
-			if ( ashArgs.get( ashArgs.size() - 1 ) == null )
-			{
-				throw controller.runtimeException("Argument value is null.");
-			}
-		}
-
-		// Find library function matching arguments.
 		Function function = null;
 		Function[] libraryFunctions = RuntimeLibrary.functions.findFunctions( ashFunctionName );
 
@@ -104,6 +90,49 @@ public class JavascriptAshStub extends BaseFunction
 				break;
 			}
 		}
+
+		return function;
+	}
+	
+	@Override
+	public Object call( Context cx, Scriptable scope, Scriptable thisObj, Object[] args )
+	{
+		ValueCoercer coercer = new ValueCoercer( controller, cx, scope );
+
+		// Find library function matching arguments, in two stages.
+		// First, designate any arguments where we can't determine type from JS as ANY_TYPE.
+		List<Value> ashArgs = new ArrayList<>();
+		for ( final Object original : args ) {
+			Value coerced = coercer.fromJava( original );
+			if ( coerced == null )
+			{
+				coerced = new Value( DataTypes.ANY_TYPE );
+			}
+			ashArgs.add( coerced );
+		}
+		Function function = findMatchingFunction( ashFunctionName, ashArgs );
+
+		if ( function == null )
+		{
+			throw controller.runtimeException( Parser.undefinedFunctionMessage( ashFunctionName, ashArgs ) );
+		}
+
+		// Second, infer the type for any missing arguments from the closest function match.
+		for ( int i = 0; i < ashArgs.size(); i++ )
+		{
+			Object original = args[i];
+			Value coerced = coercer.fromJava( original );
+			if ( coerced == null )
+			{
+				// Try again, this time with a type hint.
+				coerced = coercer.fromJava( original, function.getVariableReferences().get(i).getType() );
+				if ( coerced == null )
+				{
+					throw controller.runtimeException( "Could not coerce argument to valid ASH value." );
+				}
+			}
+		}
+		function = findMatchingFunction( ashFunctionName, ashArgs );
 
 		LibraryFunction ashFunction;
 		if ( function instanceof LibraryFunction )

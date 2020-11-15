@@ -213,12 +213,19 @@ public class ValueCoercer {
 		return new MapValue( new AggregateType( dataType, indexType ), underlyingMap );
 	}
 
-	private ArrayValue convertNativeArray( NativeArray nativeArray )
+	private ArrayValue convertNativeArray( NativeArray nativeArray, Type typeHint )
 	{
 		if ( nativeArray.size() == 0 )
 		{
-			// FIXME: Return an empty aggregate, but with what type? Take a type hint.
-			return null;
+			if ( typeHint != null && typeHint instanceof AggregateType && ((AggregateType) typeHint).getSize() >= 0 )
+			{
+				AggregateType aggregateTypeHint = (AggregateType) typeHint;
+				return new ArrayValue( new AggregateType( aggregateTypeHint.getDataType(), 0) );
+			}
+			else
+			{
+				return new ArrayValue( new AggregateType( DataTypes.ANY_TYPE, 0 ) );
+			}
 		}
 
 		Type elementType = fromJava( nativeArray.get( 0 ) ).getType();
@@ -230,7 +237,7 @@ public class ValueCoercer {
 		return new ArrayValue( new AggregateType( elementType, 0 ), result );
 	}
 
-	public Value fromJava( Object object )
+	public Value fromJava( Object object, Type typeHint )
 	{
 		if ( object == null ) return null;
 		else if ( object instanceof Boolean )
@@ -267,12 +274,16 @@ public class ValueCoercer {
 		}
 		else if ( object instanceof NativeArray )
 		{
-			return convertNativeArray( (NativeArray) object );
+			return convertNativeArray( (NativeArray) object, typeHint );
 		}
 		else
 		{
 			return null;
 		}
+	}
 
+	public Value fromJava( Object object )
+	{
+		return fromJava( object, null );
 	}
 }
