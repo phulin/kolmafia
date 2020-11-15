@@ -35,10 +35,8 @@ package net.sourceforge.kolmafia.textui.javascript;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.mozilla.javascript.BoundFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
@@ -47,7 +45,6 @@ import org.mozilla.javascript.ScriptableObject;
 
 import net.sourceforge.kolmafia.KoLConstants;
 import net.sourceforge.kolmafia.KoLmafia;
-import net.sourceforge.kolmafia.textui.parsetree.Type;
 
 public class ProxyRecordWrapperPrototype
 	extends ScriptableObject
@@ -94,9 +91,12 @@ public class ProxyRecordWrapperPrototype
 
 		for ( Method method : recordValueClass.getDeclaredMethods() )
 		{
-			ProxyRecordMethodWrapper methodWrapper = new ProxyRecordMethodWrapper( method );
-			String methodShortName = JavascriptRuntime.toCamelCase( method.getName().replace( "get_", "" ) );
-			setGetterOrSetter( methodShortName, 0, methodWrapper, false );
+			if ( method.getName().startsWith("get_") )
+			{
+				ProxyRecordMethodWrapper methodWrapper = new ProxyRecordMethodWrapper( method );
+				String methodShortName = JavascriptRuntime.toCamelCase( method.getName().replace( "get_", "" ) );
+				setGetterOrSetter( methodShortName, 0, methodWrapper, false );
+			}
 		}
 
 		try
@@ -110,6 +110,12 @@ public class ProxyRecordWrapperPrototype
 			Function getFunction = new FunctionObject( "get", getMethod, scope );
 			ScriptableObject.defineProperty( getFunction, "typeName", getClassName(), DONTENUM | READONLY | PERMANENT );
 			constructor.defineProperty( "get", getFunction, DONTENUM | READONLY | PERMANENT );
+
+			Method allMethod = ProxyRecordWrapper.class.getDeclaredMethod( "all",
+				new Class[] { Context.class, Scriptable.class, Object[].class, Function.class } );
+			Function allFunction = new FunctionObject( "all", allMethod, scope );
+			ScriptableObject.defineProperty( allFunction, "typeName", getClassName(), DONTENUM | READONLY | PERMANENT );
+			constructor.defineProperty( "all", allFunction, DONTENUM | READONLY | PERMANENT );
 
 			constructor.sealObject();
 

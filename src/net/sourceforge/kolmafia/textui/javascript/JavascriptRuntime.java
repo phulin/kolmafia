@@ -270,7 +270,7 @@ public class JavascriptRuntime
 				setState(State.EXIT);
 			}
 
-			return new ValueCoercer( this, cx, scope ).fromJava( returnValue );
+			return new ValueConverter( cx, scope ).fromJava( returnValue );
 		}
 		finally
 		{

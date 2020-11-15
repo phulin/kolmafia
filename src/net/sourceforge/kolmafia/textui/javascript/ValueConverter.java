@@ -34,10 +34,12 @@
 package net.sourceforge.kolmafia.textui.javascript;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.mozilla.javascript.ConsString;
 import org.mozilla.javascript.Context;
@@ -46,10 +48,8 @@ import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
-import net.sourceforge.kolmafia.KoLmafia;
-import net.sourceforge.kolmafia.KoLConstants.MafiaState;
 import net.sourceforge.kolmafia.textui.DataTypes;
-import net.sourceforge.kolmafia.textui.ScriptRuntime;
+import net.sourceforge.kolmafia.textui.ScriptException;
 import net.sourceforge.kolmafia.textui.parsetree.AggregateType;
 import net.sourceforge.kolmafia.textui.parsetree.ArrayValue;
 import net.sourceforge.kolmafia.textui.parsetree.MapValue;
@@ -57,14 +57,12 @@ import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Type;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 
-public class ValueCoercer {
-	private ScriptRuntime controller;
+public class ValueConverter {
 	private Context cx;
 	private Scriptable scope;
 
-	public ValueCoercer( ScriptRuntime controller, Context cx, Scriptable scope )
+	public ValueConverter( Context cx, Scriptable scope )
 	{
-		this.controller = controller;
 		this.cx = cx;
 		this.scope = scope;
 	}
@@ -82,7 +80,7 @@ public class ValueCoercer {
 			}
 			else if ( !value.getType().equals( DataTypes.STRING_TYPE ) )
 			{
-				throw controller.runtimeException( "Maps may only have string keys." );
+				throw new ScriptException( "Maps may only have string keys." );
 			}
 			ScriptableObject.putProperty( result, keyString, asJava( value ) );
 		}
@@ -91,13 +89,12 @@ public class ValueCoercer {
 
 	private NativeArray asNativeArray( ArrayValue arrayValue )
 	{
-		Value[] arrayValueContents = (Value[]) arrayValue.content;
-		Object[] javaContents = new Object[ arrayValueContents.length ];
-		for ( int i = 0; i < arrayValueContents.length; i++ )
-		{
-			javaContents[i] = asJava( arrayValueContents[i] );
-		}
-		return new NativeArray( javaContents );
+		return new NativeArray(
+			Arrays.asList( (Value[]) arrayValue.content )
+				.stream()
+				.map( value -> asJava( value ) )
+				.collect( Collectors.toList() )
+				.toArray() );
 	}
 
 	public Object asJava( Value value )
@@ -140,6 +137,10 @@ public class ValueCoercer {
 		{
 			return asNativeArray( (ArrayValue) value );
 		}
+		else if ( DataTypes.enumeratedTypes.contains( value.getType() ) )
+		{
+			return new ProxyRecordWrapper( value.asProxy().getClass(), value );
+		}
 		else
 		{
 			// record type, ...?
@@ -174,12 +175,19 @@ public class ValueCoercer {
 		}
 	}
 
-	private MapValue convertNativeObject( NativeObject nativeObject )
+	private MapValue convertNativeObject( NativeObject nativeObject, Type typeHint )
 	{
 		if ( nativeObject.size() == 0 )
 		{
-			// FIXME: Return an empty aggregate, but with what type? Take a type hint.
-			return null;
+			if ( typeHint != null && typeHint instanceof AggregateType && ((AggregateType) typeHint).getSize() < 0 )
+			{
+				AggregateType aggregateTypeHint = (AggregateType) typeHint;
+				return new MapValue( new AggregateType( aggregateTypeHint.getDataType(), aggregateTypeHint.getIndexType() ) );
+			}
+			else
+			{
+				return new MapValue( new AggregateType( DataTypes.ANY_TYPE, DataTypes.ANY_TYPE ) );
+			}
 		}
 
 		Type dataType = null;
@@ -211,12 +219,16 @@ public class ValueCoercer {
 			}
 			else
 			{
-				// FIXME: Thread state through so we can throw an exception here instead.
-				KoLmafia.updateDisplay( MafiaState.ERROR, "Failed to insert value into map." );
+				throw new ScriptException( "Failed to insert value into map." );
 			}
 		}
 
 		return new MapValue( new AggregateType( dataType, indexType ), underlyingMap );
+	}
+
+	private MapValue convertNativeObject( NativeObject nativeObject )
+	{
+		return convertNativeObject( nativeObject, null );
 	}
 
 	private ArrayValue convertNativeArray( NativeArray nativeArray, Type typeHint )

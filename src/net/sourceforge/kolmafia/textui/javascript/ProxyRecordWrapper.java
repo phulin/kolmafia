@@ -34,17 +34,18 @@
 package net.sourceforge.kolmafia.textui.javascript;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
-import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-import org.mozilla.javascript.Undefined;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
+import net.sourceforge.kolmafia.textui.ScriptException;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Type;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
@@ -125,7 +126,7 @@ public class ProxyRecordWrapper
 	{
 		if ( args.length != 1 )
 		{
-			return Undefined.instance;
+			throw new ScriptException( "<Class>.get takes only one argument: a number/string or an array." );
 		}
 
 		String typeName = (String) ScriptableObject.getProperty( functionObject, "typeName" );
@@ -145,5 +146,25 @@ public class ProxyRecordWrapper
 		{
 			return getOne( type, arg );
 		}
+	}
+
+	public static Object all( Context cx, Scriptable thisObject, Object[] args, Function functionObject )
+	{
+		if ( args.length != 0 )
+		{
+			throw new ScriptException( "<Class>.all does not take arguments." );
+		}
+
+		String typeName = (String) ScriptableObject.getProperty( functionObject, "typeName" );
+		Type type = DataTypes.simpleTypes.find( typeName );
+
+		ValueConverter coercer = new ValueConverter( cx, ScriptableObject.getTopLevelScope( thisObject ) );
+
+		return new NativeArray(
+			Arrays.asList( (Value[]) type.allValues().content )
+				.stream()
+				.map( value -> coercer.asJava( value ) )
+				.collect( Collectors.toList() )
+				.toArray() );
 	}
 }

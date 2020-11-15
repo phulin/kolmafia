@@ -106,7 +106,7 @@ public class JavascriptAshStub
 			throw new ScriptInterruptException();
 		}
 
-		ValueCoercer coercer = new ValueCoercer( controller, cx, scope );
+		ValueConverter coercer = new ValueConverter( cx, scope );
 
 		// Find library function matching arguments, in two stages.
 		// First, designate any arguments where we can't determine type from JS as ANY_TYPE.
@@ -162,11 +162,11 @@ public class JavascriptAshStub
 
 		if ( returnValue instanceof Value && ((Value) returnValue).asProxy() instanceof ProxyRecordValue )
 		{
-			returnValue = new ProxyRecordWrapper(returnValue.getClass(), (Value) returnValue);
+			returnValue = new ProxyRecordWrapper( returnValue.getClass(), (Value) returnValue );
 		}
 		else if ( !( returnValue instanceof Scriptable ) )
 		{
-			returnValue = Context.javaToJS(returnValue, scope);
+			returnValue = Context.javaToJS( returnValue, scope);
 		}
 
 		if ( returnValue instanceof NativeJavaObject )
