@@ -35,15 +35,19 @@ package net.sourceforge.kolmafia.textui.javascript;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.mozilla.javascript.BoundFunction;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 import net.sourceforge.kolmafia.KoLConstants;
 import net.sourceforge.kolmafia.KoLmafia;
+import net.sourceforge.kolmafia.textui.parsetree.Type;
 
 public class ProxyRecordWrapperPrototype
 	extends ScriptableObject
@@ -100,6 +104,13 @@ public class ProxyRecordWrapperPrototype
 			Method constructorMethod = ProxyRecordWrapper.class.getDeclaredMethod( "constructDefaultValue", new Class[] {} );
 			FunctionObject constructor = new FunctionObject( getClassName(), constructorMethod, scope );
 			constructor.addAsConstructor( scope, this );
+
+			Method getMethod = ProxyRecordWrapper.class.getDeclaredMethod( "genericGet",
+				new Class[] { Context.class, Scriptable.class, Object[].class, Function.class } );
+			Function getFunction = new FunctionObject( "get", getMethod, scope );
+			ScriptableObject.defineProperty( getFunction, "typeName", getClassName(), DONTENUM | READONLY | PERMANENT );
+			constructor.defineProperty( "get", getFunction, DONTENUM | READONLY | PERMANENT );
+
 			constructor.sealObject();
 
 			for ( String methodName : new String[] { "toString", "valueOf" } )
@@ -125,13 +136,13 @@ public class ProxyRecordWrapperPrototype
 		registry.remove( new ContextClass( cx, recordValueClass ) );
 	}
 
-	public String getClassName()
-	{
-		return recordValueClass.getSimpleName().replace( "Proxy", "" );
-	}
-
 	public static ProxyRecordWrapperPrototype getPrototypeInstance( Context cx, Class<?> recordValueClass )
 	{
 		return registry.get( new ContextClass( cx, recordValueClass ) );
+	}
+
+	public String getClassName()
+	{
+		return recordValueClass.getSimpleName().replace( "Proxy", "" );
 	}
 }

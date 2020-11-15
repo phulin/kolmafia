@@ -1,0 +1,278 @@
+/**
+ * Copyright (c) 2005-2020, KoLmafia development team
+ * http://kolmafia.sourceforge.net/
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  [1] Redistributions of source code must retain the above copyright
+ *      notice, this list of conditions and the following disclaimer.
+ *  [2] Redistributions in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in
+ *      the documentation and/or other materials provided with the
+ *      distribution.
+ *  [3] Neither the name "KoLmafia" nor the names of its contributors may
+ *      be used to endorse or promote products derived from this software
+ *      without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION ) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE ) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package net.sourceforge.kolmafia.textui.javascript;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Map.Entry;
+
+import org.mozilla.javascript.ConsString;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
+
+import net.sourceforge.kolmafia.KoLmafia;
+import net.sourceforge.kolmafia.KoLConstants.MafiaState;
+import net.sourceforge.kolmafia.textui.DataTypes;
+import net.sourceforge.kolmafia.textui.ScriptRuntime;
+import net.sourceforge.kolmafia.textui.parsetree.AggregateType;
+import net.sourceforge.kolmafia.textui.parsetree.ArrayValue;
+import net.sourceforge.kolmafia.textui.parsetree.MapValue;
+import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
+import net.sourceforge.kolmafia.textui.parsetree.Type;
+import net.sourceforge.kolmafia.textui.parsetree.Value;
+
+public class ValueCoercer {
+	private ScriptRuntime controller;
+	private Context cx;
+	private Scriptable scope;
+
+	public ValueCoercer( ScriptRuntime controller, Context cx, Scriptable scope )
+	{
+		this.controller = controller;
+		this.cx = cx;
+		this.scope = scope;
+	}
+
+	private Scriptable asObject( MapValue mapValue )
+	{
+		Scriptable result = cx.newObject( scope );
+		for ( Value key : mapValue.keys() )
+		{
+			Value value = mapValue.aref( key );
+			String keyString = key.contentString;
+			if ( value.getType().equals( DataTypes.INT_TYPE ) )
+			{
+				keyString = Long.toString(key.contentLong);
+			}
+			else if ( !value.getType().equals( DataTypes.STRING_TYPE ) )
+			{
+				throw controller.runtimeException( "Maps may only have string keys." );
+			}
+			ScriptableObject.putProperty( result, keyString, asJava( value ) );
+		}
+		return result;
+	}
+
+	private NativeArray asNativeArray( ArrayValue arrayValue )
+	{
+		return new NativeArray( (Object[]) arrayValue.content );
+	}
+
+	public Object asJava( Value value )
+	{
+		if ( value == null ) return null;
+		else if ( value.getType().equals( DataTypes.VOID_TYPE ) )
+		{
+			return null;
+		}
+		else if ( value.getType().equals( DataTypes.BOOLEAN_TYPE ) )
+		{
+			return value.contentLong != 0;
+		}
+		else if ( value.getType().equals( DataTypes.INT_TYPE ) )
+		{
+			return value.contentLong;
+		}
+		else if ( value.getType().equals( DataTypes.FLOAT_TYPE ) )
+		{
+			return value.floatValue();
+		}
+		else if ( value.getType().equals( DataTypes.STRING_TYPE ) || value.getType().equals( DataTypes.STRICT_STRING_TYPE ) )
+		{
+			return value.contentString;
+		}
+		else if ( value.getType().equals( DataTypes.BUFFER_TYPE ) )
+		{
+			return value.content;
+		}
+		else if ( value.getType().equals( DataTypes.MATCHER_TYPE ) )
+		{
+			// This should not happen.
+			return null;
+		}
+		else if ( value instanceof MapValue )
+		{
+			return asObject( (MapValue) value );
+		}
+		else if ( value instanceof ArrayValue )
+		{
+			return asNativeArray( (ArrayValue) value );
+		}
+		else
+		{
+			// record type, ...?
+			return value;
+		}
+	}
+
+	private Value coerce( Value value, Type targetType )
+	{
+		Type valueType = value.getType();
+		if ( targetType.equals( valueType ) )
+		{
+			return value;
+		}
+		else if ( targetType.equals( DataTypes.TYPE_STRING ) )
+		{
+			return value.toStringValue();
+		}
+		else if ( targetType.equals( DataTypes.TYPE_INT ) &&
+			valueType.equals( DataTypes.TYPE_FLOAT ) )
+		{
+			return value.toIntValue();
+		}
+		else if ( targetType.equals( DataTypes.TYPE_FLOAT ) &&
+			valueType.equals( DataTypes.TYPE_INT ) )
+		{
+			return value.toFloatValue();
+		}
+		else
+		{
+			return null;
+		}
+	}
+
+	private MapValue convertNativeObject( NativeObject nativeObject )
+	{
+		if ( nativeObject.size() == 0 )
+		{
+			// FIXME: Return an empty aggregate, but with what type? Take a type hint.
+			return null;
+		}
+
+		Type dataType = null;
+		Type indexType = null;
+		for ( Entry<?, ?> entry : nativeObject.entrySet() )
+		{
+			dataType = fromJava( entry.getValue() ).getType();
+			indexType = fromJava( entry.getKey() ).getType();
+			if ( indexType.equals( DataTypes.TYPE_FLOAT ) )
+			{
+				// Convert float index to int, since it doesn't make sense in JS anyway.
+				indexType = DataTypes.INT_TYPE;
+			}
+			break;
+		}
+
+		Map<Value, Value> underlyingMap = new TreeMap<Value, Value>();
+		for ( Entry<?, ?> entry : nativeObject.entrySet() )
+		{
+			Value key = fromJava( entry.getKey() );
+			Value value = fromJava( entry.getValue() );
+
+			Value keyCoerced = coerce( key, indexType );
+			Value valueCoerced = coerce( value, dataType.getBaseType() );
+
+			if ( keyCoerced != null && valueCoerced != null )
+			{
+				underlyingMap.put( keyCoerced, valueCoerced );
+			}
+			else
+			{
+				// FIXME: Thread state through so we can throw an exception here instead.
+				KoLmafia.updateDisplay( MafiaState.ERROR, "Failed to insert value into map." );
+			}
+		}
+
+		return new MapValue( new AggregateType( dataType, indexType ), underlyingMap );
+	}
+
+	private ArrayValue convertNativeArray( NativeArray nativeArray )
+	{
+		if ( nativeArray.size() == 0 )
+		{
+			// FIXME: Return an empty aggregate, but with what type? Take a type hint.
+			return null;
+		}
+
+		Type elementType = fromJava( nativeArray.get( 0 ) ).getType();
+		List<Value> result = new ArrayList<>();
+		for ( Object element : (NativeArray) nativeArray )
+		{
+			result.add( fromJava( element ) );
+		}
+		return new ArrayValue( new AggregateType( elementType, 0 ), result );
+	}
+
+	public Value fromJava( Object object )
+	{
+		if ( object == null ) return null;
+		else if ( object instanceof Boolean )
+		{
+			return DataTypes.makeBooleanValue( (Boolean) object );
+		}
+		else if ( object instanceof Float || object instanceof Double )
+		{
+			return DataTypes.makeFloatValue( ( (Number) object ).floatValue() );
+		}
+		else if ( object instanceof Byte || object instanceof Short || object instanceof Integer || object instanceof Long )
+		{
+			return DataTypes.makeIntValue( ( (Number) object ).intValue() );
+		}
+		else if ( object instanceof String )
+		{
+			return DataTypes.makeStringValue( (String) object );
+		}
+		else if ( object instanceof StringBuffer || object instanceof ConsString )
+		{
+			return DataTypes.makeStringValue( object.toString() );
+		}
+		else if ( object instanceof ProxyRecordValue )
+		{
+			return (ProxyRecordValue) object;
+		}
+		else if ( object instanceof ProxyRecordWrapper )
+		{
+			return ((ProxyRecordWrapper) object).getWrapped();
+		}
+		else if ( object instanceof NativeObject )
+		{
+			return convertNativeObject( (NativeObject) object );
+		}
+		else if ( object instanceof NativeArray )
+		{
+			return convertNativeArray( (NativeArray) object );
+		}
+		else
+		{
+			return null;
+		}
+
+	}
+}

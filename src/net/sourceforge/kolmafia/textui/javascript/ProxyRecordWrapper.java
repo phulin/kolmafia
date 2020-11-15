@@ -33,11 +33,20 @@
 
 package net.sourceforge.kolmafia.textui.javascript;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.FunctionObject;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
+import net.sourceforge.kolmafia.textui.parsetree.Type;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 
 public class ProxyRecordWrapper
@@ -82,5 +91,59 @@ public class ProxyRecordWrapper
 	{
 		return new ProxyRecordWrapper( ProxyRecordValue.ItemProxy.class,
 			new ProxyRecordValue.ItemProxy( DataTypes.makeIntValue( 1 ) ) );
+	}
+
+	private static ProxyRecordWrapper getOne( Type type, Object key )
+	{
+		Value rawValue = type.initialValue();
+		if ( key instanceof String )
+		{
+			rawValue = type.parseValue( (String) key, true );
+		}
+		else if ( key instanceof Float || key instanceof Double )
+		{
+			rawValue = type.makeValue( (int) Math.round( (Double) key ), true );
+		}
+		else if ( key instanceof Number )
+		{
+			rawValue = type.makeValue( ((Number) key).intValue(), true );
+		}
+
+		Class<?> proxyRecordValueClass = null;
+		for ( Class<?> testRecordValueClass : ProxyRecordValue.class.getDeclaredClasses() )
+		{
+			if ( testRecordValueClass.getSimpleName().toLowerCase().startsWith( type.getName() ) )
+			{
+				proxyRecordValueClass = testRecordValueClass;
+			}
+		}
+
+		return new ProxyRecordWrapper( proxyRecordValueClass, rawValue );
+	}
+
+	public static Object genericGet( Context cx, Scriptable thisObject, Object[] args, Function functionObject )
+	{
+		if ( args.length != 1 )
+		{
+			return Undefined.instance;
+		}
+
+		String typeName = (String) ScriptableObject.getProperty( functionObject, "typeName" );
+		Type type = DataTypes.simpleTypes.find( typeName );
+
+		Object arg = args[0];
+		if ( arg instanceof Iterable )
+		{
+			List<Object> result = new ArrayList<>();
+			for ( Object key : (Iterable<?>) arg )
+			{
+				result.add( getOne( type, key ) );
+			}
+			return new NativeArray( result.toArray() );
+		}
+		else
+		{
+			return getOne( type, arg );
+		}
 	}
 }

@@ -34,7 +34,7 @@
 package net.sourceforge.kolmafia.textui.parsetree;
 
 import java.io.PrintStream;
-
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +60,10 @@ import net.sourceforge.kolmafia.utilities.StringUtilities;
 
 import org.json.JSONException;
 import org.mozilla.javascript.ConsString;
+import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeMap;
 import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.ScriptableObject;
 
 public class Value
 	extends ParseTreeNode
@@ -612,178 +614,5 @@ public class Value
 		{
 			return this.toString();
 		}
-	}
-
-	private static NativeObject asNativeObject( MapValue mapValue )
-	{
-		NativeObject result = new NativeObject();
-		for ( Value key : mapValue.keys() )
-		{
-			Value value = mapValue.aref( key );
-			result.put( key, value );
-		}
-		return result;
-	}
-
-	public Object toJava()
-	{
-		if ( this.getType().equals( DataTypes.VOID_TYPE ) )
-		{
-			return null;
-		}
-		else if ( this.getType().equals( DataTypes.BOOLEAN_TYPE ) )
-		{
-			return this.contentLong != 0;
-		}
-		else if ( this.getType().equals( DataTypes.INT_TYPE ) )
-		{
-			return this.contentLong;
-		}
-		else if ( this.getType().equals( DataTypes.FLOAT_TYPE ) )
-		{
-			return this.floatValue();
-		}
-		else if ( this.getType().equals( DataTypes.STRING_TYPE ) || this.getType().equals( DataTypes.STRICT_STRING_TYPE ) )
-		{
-			return this.contentString;
-		}
-		else if ( this.getType().equals( DataTypes.BUFFER_TYPE ) )
-		{
-			return this.content;
-		}
-		else if ( this.getType().equals( DataTypes.MATCHER_TYPE ) )
-		{
-			// This should not happen.
-			return null;
-		}
-		else if ( this instanceof MapValue )
-		{
-			return asNativeObject( (MapValue) this );
-		}
-		else
-		{
-			// record type, ...?
-			return this;
-		}
-	}
-
-	public static Object asJava( Value value )
-	{
-		if ( value == null ) return null;
-		else return value.toJava();
-	}
-
-	private static Value coerce( Value value, Type targetType )
-	{
-		Type valueType = value.getType();
-		if ( targetType.equals( valueType ) )
-		{
-			return value;
-		}
-		else if ( targetType.equals( DataTypes.TYPE_STRING ) )
-		{
-			return value.toStringValue();
-		}
-		else if ( targetType.equals( DataTypes.TYPE_INT ) &&
-			valueType.equals( DataTypes.TYPE_FLOAT ) )
-		{
-			return value.toIntValue();
-		}
-		else if ( targetType.equals( DataTypes.TYPE_FLOAT ) &&
-			valueType.equals( DataTypes.TYPE_INT ) )
-		{
-			return value.toFloatValue();
-		}
-		else
-		{
-			return null;
-		}
-	}
-
-	private static MapValue convertNativeObject( NativeObject nativeObject )
-	{
-		if ( nativeObject.size() == 0 )
-		{
-			// FIXME: Return an empty aggregate, but with what type? Take a type hint.
-			return null;
-		}
-
-		Type dataType = null;
-		Type indexType = null;
-		for ( Entry<?, ?> entry : nativeObject.entrySet() )
-		{
-			dataType = fromJava( entry.getValue() ).getType();
-			indexType = fromJava( entry.getKey() ).getType();
-			if ( indexType.equals( DataTypes.TYPE_FLOAT ) )
-			{
-				// Convert float index to int, since it doesn't make sense in JS anyway.
-				indexType = DataTypes.INT_TYPE;
-			}
-			break;
-		}
-
-		Map<Value, Value> underlyingMap = new TreeMap<Value, Value>();
-		for ( Entry<?, ?> entry : nativeObject.entrySet() )
-		{
-			Value key = fromJava( entry.getKey() );
-			Value value = fromJava( entry.getValue() );
-
-			Value keyCoerced = coerce( key, indexType );
-			Value valueCoerced = coerce( value, dataType.getBaseType() );
-
-			if ( keyCoerced != null && valueCoerced != null )
-			{
-				underlyingMap.put( keyCoerced, valueCoerced );
-			}
-			else
-			{
-				// FIXME: Thread state through so we can throw an exception here instead.
-				KoLmafia.updateDisplay( MafiaState.ERROR, "Failed to insert value into map." );
-			}
-		}
-
-		return new MapValue( new AggregateType( dataType, indexType ), underlyingMap );
-	}
-
-	public static Value fromJava( Object object )
-	{
-		if ( object == null ) return null;
-		else if ( object instanceof Boolean )
-		{
-			return DataTypes.makeBooleanValue( (Boolean) object );
-		}
-		else if ( object instanceof Float || object instanceof Double )
-		{
-			return DataTypes.makeFloatValue( ( (Number) object ).floatValue() );
-		}
-		else if ( object instanceof Byte || object instanceof Short || object instanceof Integer || object instanceof Long )
-		{
-			return DataTypes.makeIntValue( ( (Number) object ).intValue() );
-		}
-		else if ( object instanceof String )
-		{
-			return DataTypes.makeStringValue( (String) object );
-		}
-		else if ( object instanceof StringBuffer || object instanceof ConsString )
-		{
-			return DataTypes.makeStringValue( object.toString() );
-		}
-		else if ( object instanceof ProxyRecordValue )
-		{
-			return (ProxyRecordValue) object;
-		}
-		else if ( object instanceof ProxyRecordWrapper )
-		{
-			return ((ProxyRecordWrapper) object).getWrapped();
-		}
-		else if ( object instanceof NativeObject )
-		{
-			return convertNativeObject( (NativeObject) object );
-		}
-		else
-		{
-			return null;
-		}
-
 	}
 }
