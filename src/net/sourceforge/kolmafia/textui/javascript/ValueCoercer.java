@@ -91,7 +91,13 @@ public class ValueCoercer {
 
 	private NativeArray asNativeArray( ArrayValue arrayValue )
 	{
-		return new NativeArray( (Object[]) arrayValue.content );
+		Value[] arrayValueContents = (Value[]) arrayValue.content;
+		Object[] javaContents = new Object[ arrayValueContents.length ];
+		for ( int i = 0; i < arrayValueContents.length; i++ )
+		{
+			javaContents[i] = asJava( arrayValueContents[i] );
+		}
+		return new NativeArray( javaContents );
 	}
 
 	public Object asJava( Value value )
@@ -234,7 +240,7 @@ public class ValueCoercer {
 		{
 			result.add( fromJava( element ) );
 		}
-		return new ArrayValue( new AggregateType( elementType, 0 ), result );
+		return new ArrayValue( new AggregateType( elementType, nativeArray.size() ), result );
 	}
 
 	public Value fromJava( Object object, Type typeHint )
