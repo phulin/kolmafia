@@ -15,6 +15,7 @@
 	<classpathentry kind="lib" path="lib/jar/jsch.agentproxy.usocket-jna-0.0.7.jar"/>
 	<classpathentry kind="lib" path="lib/jar/jsch.agentproxy.usocket-nc-0.0.7.jar"/>
 	<classpathentry kind="lib" path="lib/jar/lz4-java-1.4.1.jar"/>
+	<classpathentry kind="lib" path="lib/jar/rhino-1.7.13.jar"/>
 	<classpathentry kind="lib" path="lib/jar/sequence-library-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/jar/sqljet-1.1.12.jar"/>
 	<classpathentry kind="lib" path="lib/jar/svnkit-cli-1.10.1.jar"/>
