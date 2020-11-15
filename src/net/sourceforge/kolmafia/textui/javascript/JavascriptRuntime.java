@@ -53,6 +53,7 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.WrappedException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -251,6 +252,12 @@ public class JavascriptRuntime
 			catch ( ScriptInterruptException e )
 			{
 				// This only happens on world peace. Fall through and exit the interpreter.
+			}
+			catch ( WrappedException e )
+			{
+				Throwable unwrapped = e.getWrappedException();
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR,
+					unwrapped.getMessage() + "\n" + e.getScriptStackTrace() );
 			}
 			catch ( EvaluatorException e )
 			{

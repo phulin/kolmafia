@@ -99,15 +99,20 @@ public class EnumeratedWrapper
 		Value rawValue = type.initialValue();
 		if ( key instanceof String )
 		{
-			rawValue = type.parseValue( (String) key, true );
+			rawValue = type.parseValue( (String) key, false );
 		}
 		else if ( key instanceof Float || key instanceof Double )
 		{
-			rawValue = type.makeValue( (int) Math.round( (Double) key ), true );
+			rawValue = type.makeValue( (int) Math.round( (Double) key ), false );
 		}
 		else if ( key instanceof Number )
 		{
-			rawValue = type.makeValue( ((Number) key).intValue(), true );
+			rawValue = type.makeValue( ((Number) key).intValue(), false );
+		}
+
+		if ( rawValue == null )
+		{
+			throw new ScriptException( "Bad " + type.getName() + " value: " + key.toString() );
 		}
 
 		Class<?> proxyRecordValueClass = null;
