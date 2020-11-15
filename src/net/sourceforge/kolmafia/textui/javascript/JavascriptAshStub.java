@@ -41,10 +41,12 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 
+import net.sourceforge.kolmafia.KoLmafia;
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.Parser;
 import net.sourceforge.kolmafia.textui.ScriptRuntime;
 import net.sourceforge.kolmafia.textui.RuntimeLibrary;
+import net.sourceforge.kolmafia.textui.ScriptException;
 import net.sourceforge.kolmafia.textui.parsetree.Function;
 import net.sourceforge.kolmafia.textui.parsetree.LibraryFunction;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
@@ -99,6 +101,11 @@ public class JavascriptAshStub
 	@Override
 	public Object call( Context cx, Scriptable scope, Scriptable thisObj, Object[] args )
 	{
+		if ( Thread.interrupted() || !KoLmafia.permitsContinue() )
+		{
+			throw new ScriptInterruptException();
+		}
+
 		ValueCoercer coercer = new ValueCoercer( controller, cx, scope );
 
 		// Find library function matching arguments, in two stages.

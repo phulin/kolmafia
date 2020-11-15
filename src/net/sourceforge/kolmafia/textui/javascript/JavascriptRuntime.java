@@ -35,6 +35,7 @@ package net.sourceforge.kolmafia.textui.javascript;
 
 import net.sourceforge.kolmafia.KoLConstants;
 import net.sourceforge.kolmafia.KoLmafia;
+import net.sourceforge.kolmafia.KoLConstants.MafiaState;
 import net.sourceforge.kolmafia.request.RelayRequest;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Type;
@@ -58,16 +59,17 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class JavascriptRuntime
 	implements ScriptRuntime
 {
-	static Set<JavascriptRuntime> runningRuntimes = new HashSet<>();
+	static Map<Thread, JavascriptRuntime> runningRuntimes = new ConcurrentHashMap<>();
 
 	private File scriptFile = null;
 	private String scriptString = null;
@@ -176,7 +178,7 @@ public class JavascriptRuntime
 		// TODO: Support for requesting user arguments if missing.
 		Context cx = Context.enter();
 		cx.setLanguageVersion( Context.VERSION_ES6 );
-		runningRuntimes.add( this );
+		runningRuntimes.put( Thread.currentThread(), this );
 
 		if ( arguments == null )
 		{
@@ -239,6 +241,10 @@ public class JavascriptRuntime
 					returnValue = ( (Function) mainFunction ).call( cx, scope, cx.newObject(scope), arguments );
 				}
 			}
+			catch ( ScriptInterruptException e )
+			{
+				// This only happens on world peace. Fall through and exit the interpreter.
+			}
 			catch ( EvaluatorException e )
 			{
 				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR,
@@ -268,22 +274,30 @@ public class JavascriptRuntime
 		}
 		finally
 		{
-			runningRuntimes.remove( this );
+			runningRuntimes.remove( Thread.currentThread() );
 			cleanupProxyRecordValueTypes( cx );
 			Context.exit();
+		}
+	}
+
+	public static void interruptAll()
+	{
+		for ( Thread thread : runningRuntimes.keySet() )
+		{
+			thread.interrupt();
 		}
 	}
 
 	@Override
 	public ScriptException runtimeException( final String message )
 	{
-		return new ScriptException( Context.reportRuntimeError(message).getMessage() );
+		return new ScriptException( Context.reportRuntimeError( message ).getMessage() );
 	}
 
 	@Override
-	public ScriptException runtimeException2(final String message1, final String message2)
+	public ScriptException runtimeException2( final String message1, final String message2 )
 	{
-		return new ScriptException( Context.reportRuntimeError(message1 + " " + message2).getMessage() );
+		return new ScriptException( Context.reportRuntimeError( message1 + " " + message2 ).getMessage() );
 	}
 
 	@Override

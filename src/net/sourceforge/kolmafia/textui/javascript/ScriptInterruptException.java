@@ -33,48 +33,13 @@
 
 package net.sourceforge.kolmafia.textui.javascript;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import net.sourceforge.kolmafia.textui.ScriptException;
 
-import org.mozilla.javascript.BaseFunction;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Scriptable;
-
-import net.sourceforge.kolmafia.KoLmafia;
-
-public class ProxyRecordMethodWrapper extends BaseFunction
+public class ScriptInterruptException
+	extends ScriptException
 {
-	private Method method;
-
-	public ProxyRecordMethodWrapper( Method method )
+	public ScriptInterruptException()
 	{
-		this.method = method;
-	}
-
-	@Override
-	public Object call( Context cx, Scriptable scope, Scriptable thisObj, Object[] args )
-	{
-		if ( Thread.interrupted() || !KoLmafia.permitsContinue() )
-		{
-			throw new ScriptInterruptException();
-		}
-
-		if ( !( thisObj instanceof ProxyRecordWrapper ) )
-		{
-			return null;
-		}
-
-		try
-		{
-			return method.invoke( ((ProxyRecordWrapper) thisObj).getWrapped().asProxy() );
-		}
-		catch ( IllegalAccessException e )
-		{
-			return null;
-		}
-		catch ( InvocationTargetException e )
-		{
-			return null;
-		}
+		super( "Script interrupted by user." );
 	}
 }
