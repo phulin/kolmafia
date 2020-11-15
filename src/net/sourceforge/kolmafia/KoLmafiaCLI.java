@@ -858,6 +858,11 @@ public class KoLmafiaCLI
 			register( "soak" );
 		new IfStatement().register( "if" );
 		new ItemTraceCommand().register( "itrace" );
+		new JavaScriptCommand().
+			register( "js" ).
+			register( "jsq" ).
+			register( "javascript" ).
+			register( "javascriptq" );
 		new JukeboxCommand().register( "jukebox" );
 		new KitchenCommand().registerSubstring( "kitchen" );
 		new LatteCommand().register( "latte" );

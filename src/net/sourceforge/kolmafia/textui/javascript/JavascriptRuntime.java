@@ -38,6 +38,7 @@ import net.sourceforge.kolmafia.KoLmafia;
 import net.sourceforge.kolmafia.request.RelayRequest;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Type;
+import net.sourceforge.kolmafia.textui.parsetree.Value;
 import net.sourceforge.kolmafia.textui.parsetree.VariableReference;
 import net.sourceforge.kolmafia.textui.DataTypes;
 import net.sourceforge.kolmafia.textui.ScriptRuntime;
@@ -68,7 +69,8 @@ public class JavascriptRuntime
 {
 	static Set<JavascriptRuntime> runningRuntimes = new HashSet<>();
 
-	private File scriptFile;
+	private File scriptFile = null;
+	private String scriptString = null;
 
 	private State runtimeState = State.EXIT;
 
@@ -103,12 +105,17 @@ public class JavascriptRuntime
 
 		return result.toString();
 	}
-	
+
 	public JavascriptRuntime( File scriptFile )
 	{
 		this.scriptFile = scriptFile;
 	}
-	
+
+	public JavascriptRuntime( String scriptString )
+	{
+		this.scriptString = scriptString;
+	}
+
 	private void initRuntimeLibrary( Context cx, Scriptable scope )
 	{
 		Scriptable stdLib = cx.newObject(scope);
@@ -164,7 +171,7 @@ public class JavascriptRuntime
 		}
 	}
 
-	public void execute()
+	public Value execute()
 	{
 		Context cx = Context.enter();
 		cx.setLanguageVersion( Context.VERSION_ES6 );
@@ -177,49 +184,81 @@ public class JavascriptRuntime
 			initRuntimeLibrary(cx, scope);
 			initProxyRecordValueTypes(cx, scope);
 
-			FileReader scriptFileReader = new FileReader( scriptFile );
+			setState(State.NORMAL);
+
+			Object returnValue = null;
 
 			try
 			{
-				setState(State.NORMAL);
-				cx.evaluateReader( scope, scriptFileReader, scriptFile.getName(), 0, null );
+				if ( scriptFile != null )
+				{
+					FileReader scriptFileReader = null;
+					try
+					{
+						scriptFileReader = new FileReader( scriptFile );
+						returnValue = cx.evaluateReader( scope, scriptFileReader, scriptFile.getName(), 0, null );
+					}
+					catch ( FileNotFoundException e )
+					{
+						KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "File not found." );
+					}
+					catch ( IOException e )
+					{
+						KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR,
+							"JavaScript file I/O error: " + e.getMessage() );
+					}
+					finally
+					{
+						if ( scriptFileReader != null )
+						{
+							try
+							{
+								scriptFileReader.close();
+							}
+							catch ( IOException e )
+							{
+								KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR,
+									"JavaScript file I/O error: " + e.getMessage() );
+							}
+						}
+					}
+				}
+				else
+				{
+					returnValue = cx.evaluateString( scope, scriptString, "command line", 1, null );
+				}
 				Object mainFunction = scope.get( "main", scope );
 				if ( mainFunction instanceof Function )
 				{
-					Object result = ( (Function) mainFunction ).call( cx, scope, cx.newObject(scope), null );
-					System.out.println( Context.jsToJava( result, boolean.class ) );
+					returnValue = ( (Function) mainFunction ).call( cx, scope, cx.newObject(scope), null );
 				}
 			}
 			catch ( EvaluatorException e )
 			{
-				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript evaluator exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR,
+					"JavaScript evaluator exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
 			}
 			catch ( EcmaError e )
 			{
-				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript error: " + e.getErrorMessage() + "\n" + e.getScriptStackTrace() ); 
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR,
+					"JavaScript error: " + e.getErrorMessage() + "\n" + e.getScriptStackTrace() ); 
 			}
 			catch ( JavaScriptException e )
 			{
-				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JavaScript exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR,
+					"JavaScript exception: " + e.getMessage() + "\n" + e.getScriptStackTrace() );
 			}
 			catch ( ScriptException e )
 			{
-				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "Script exception: " + e.getMessage() );
+				KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR,
+					"Script exception: " + e.getMessage() );
 			}
 			finally
 			{
 				setState(State.EXIT);
-				scriptFileReader.close();
 			}
-		}
-		catch ( FileNotFoundException e )
-		{
-			KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "File not found" );
-		}
-		catch ( IOException e )
-		{
-			e.printStackTrace();
-			KoLmafia.updateDisplay( KoLConstants.MafiaState.ERROR, "JS file I/O error" );
+
+			return new ValueCoercer( this, cx, scope ).fromJava( returnValue );
 		}
 		finally
 		{
