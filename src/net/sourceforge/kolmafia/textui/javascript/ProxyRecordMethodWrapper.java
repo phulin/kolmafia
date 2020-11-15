@@ -59,14 +59,14 @@ public class ProxyRecordMethodWrapper extends BaseFunction
 			throw new ScriptInterruptException();
 		}
 
-		if ( !( thisObj instanceof ProxyRecordWrapper ) )
+		if ( !( thisObj instanceof EnumeratedWrapper ) )
 		{
 			return null;
 		}
 
 		try
 		{
-			return method.invoke( ((ProxyRecordWrapper) thisObj).getWrapped().asProxy() );
+			return method.invoke( ((EnumeratedWrapper) thisObj).getWrapped().asProxy() );
 		}
 		catch ( IllegalAccessException e )
 		{

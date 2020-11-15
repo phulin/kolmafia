@@ -162,7 +162,7 @@ public class JavascriptAshStub
 
 		if ( returnValue instanceof Value && ((Value) returnValue).asProxy() instanceof ProxyRecordValue )
 		{
-			returnValue = new ProxyRecordWrapper( returnValue.getClass(), (Value) returnValue );
+			returnValue = new EnumeratedWrapper( returnValue.getClass(), (Value) returnValue );
 		}
 		else if ( !( returnValue instanceof Scriptable ) )
 		{

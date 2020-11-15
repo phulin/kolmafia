@@ -139,7 +139,7 @@ public class ValueConverter {
 		}
 		else if ( DataTypes.enumeratedTypes.contains( value.getType() ) )
 		{
-			return new ProxyRecordWrapper( value.asProxy().getClass(), value );
+			return new EnumeratedWrapper( value.asProxy().getClass(), value );
 		}
 		else
 		{
@@ -282,9 +282,9 @@ public class ValueConverter {
 		{
 			return (ProxyRecordValue) object;
 		}
-		else if ( object instanceof ProxyRecordWrapper )
+		else if ( object instanceof EnumeratedWrapper )
 		{
-			return ((ProxyRecordWrapper) object).getWrapped();
+			return ((EnumeratedWrapper) object).getWrapped();
 		}
 		else if ( object instanceof NativeObject )
 		{

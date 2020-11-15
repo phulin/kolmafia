@@ -50,19 +50,19 @@ import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Type;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 
-public class ProxyRecordWrapper
+public class EnumeratedWrapper
 	extends ScriptableObject
 {
 	private Class<?> recordValueClass;
 	// NB: This wrapped value is NOT the proxy record type version.
-	// Instead, it's the plain value that can be turned into a proxy record via asProxy.
+	// Instead, it's the plain Value that can be turned into a proxy record via asProxy.
 	private Value wrapped;
 
-	public ProxyRecordWrapper( Class<?> recordValueClass, Value wrapped )
+	public EnumeratedWrapper( Class<?> recordValueClass, Value wrapped )
 	{
 		this.recordValueClass = recordValueClass;
 		this.wrapped = wrapped;
-		setPrototype( ProxyRecordWrapperPrototype.getPrototypeInstance( Context.getCurrentContext(), recordValueClass ) );
+		setPrototype( EnumeratedWrapperPrototype.getPrototypeInstance( Context.getCurrentContext(), wrapped.getType() ) );
 		sealObject();
 	}
 
@@ -90,11 +90,11 @@ public class ProxyRecordWrapper
 
 	public static Object constructDefaultValue()
 	{
-		return new ProxyRecordWrapper( ProxyRecordValue.ItemProxy.class,
+		return new EnumeratedWrapper( ProxyRecordValue.ItemProxy.class,
 			new ProxyRecordValue.ItemProxy( DataTypes.makeIntValue( 1 ) ) );
 	}
 
-	private static ProxyRecordWrapper getOne( Type type, Object key )
+	private static EnumeratedWrapper getOne( Type type, Object key )
 	{
 		Value rawValue = type.initialValue();
 		if ( key instanceof String )
@@ -119,7 +119,7 @@ public class ProxyRecordWrapper
 			}
 		}
 
-		return new ProxyRecordWrapper( proxyRecordValueClass, rawValue );
+		return new EnumeratedWrapper( proxyRecordValueClass, rawValue );
 	}
 
 	public static Object genericGet( Context cx, Scriptable thisObject, Object[] args, Function functionObject )

@@ -108,6 +108,19 @@ public class JavascriptRuntime
 		return result.toString();
 	}
 
+	public static String capitalize( String name )
+	{
+		if ( name == null )
+		{
+			return null;
+		}
+
+		StringBuilder result = new StringBuilder();
+		result.append( Character.toUpperCase( name.charAt( 0 ) ) );
+		result.append( name.substring( 1 ) );
+		return result.toString();
+	}
+
 	public JavascriptRuntime( File scriptFile )
 	{
 		this.scriptFile = scriptFile;
@@ -143,33 +156,27 @@ public class JavascriptRuntime
 		ScriptableObject.putProperty( scope, "Lib", stdLib );
 	}
 
-	private static void initProxyRecordValueType( Context cx, Scriptable scope, Class<?> recordValueClass )
+	private static void initEnumeratedType( Context cx, Scriptable scope, Class<?> recordValueClass, Type valueType )
 	{
-		ProxyRecordWrapperPrototype prototype = new ProxyRecordWrapperPrototype( recordValueClass );
+		EnumeratedWrapperPrototype prototype = new EnumeratedWrapperPrototype( recordValueClass, valueType );
 		prototype.initToScope( cx, scope );
 	}
 
-	private static void initProxyRecordValueTypes( Context cx, Scriptable scope )
+	private static void initEnumeratedTypes( Context cx, Scriptable scope )
 	{
-		for ( Class<?> proxyRecordValueClass : ProxyRecordValue.class.getDeclaredClasses() )
+		for ( Type valueType : DataTypes.enumeratedTypes )
 		{
-			if ( !proxyRecordValueClass.getSimpleName().endsWith("Proxy") )
+			String typeName = capitalize( valueType.getName() );
+			Class<?> proxyRecordValueClass = Value.class;
+			for ( Class<?> testProxyRecordValueClass : ProxyRecordValue.class.getDeclaredClasses() )
 			{
-				continue;
+				if ( testProxyRecordValueClass.getSimpleName().equals( typeName + "Proxy" ) )
+				{
+					proxyRecordValueClass = testProxyRecordValueClass;
+				}
 			}
-			initProxyRecordValueType( cx, scope, proxyRecordValueClass );
-		}
-	}
 
-	private static void cleanupProxyRecordValueTypes( Context cx )
-	{
-		for ( Class<?> proxyRecordValueClass : ProxyRecordValue.class.getDeclaredClasses() )
-		{
-			if ( !proxyRecordValueClass.getSimpleName().endsWith( "Proxy" ) )
-			{
-				continue;
-			}
-			ProxyRecordWrapperPrototype.cleanup( cx, proxyRecordValueClass );
+			initEnumeratedType( cx, scope, proxyRecordValueClass, valueType );
 		}
 	}
 
@@ -190,7 +197,7 @@ public class JavascriptRuntime
 			Scriptable scope = cx.initSafeStandardObjects();
 
 			initRuntimeLibrary(cx, scope);
-			initProxyRecordValueTypes(cx, scope);
+			initEnumeratedTypes(cx, scope);
 
 			setState(State.NORMAL);
 
@@ -275,7 +282,7 @@ public class JavascriptRuntime
 		finally
 		{
 			runningRuntimes.remove( Thread.currentThread() );
-			cleanupProxyRecordValueTypes( cx );
+			EnumeratedWrapperPrototype.cleanup( cx );
 			Context.exit();
 		}
 	}
